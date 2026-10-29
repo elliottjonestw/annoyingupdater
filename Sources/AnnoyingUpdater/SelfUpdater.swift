@@ -38,7 +38,7 @@ final class SelfUpdater: NSObject, ObservableObject {
 
 enum AppVersion {
     static var display: String {
-        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.1"
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.2"
         #if DEBUG
         return "\(version) · Development build"
         #else
