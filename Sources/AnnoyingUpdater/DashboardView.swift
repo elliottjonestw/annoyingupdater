@@ -79,7 +79,7 @@ struct DashboardView: View {
                     else { Text("Ready to check for updates") }
                     Spacer()
                     if model.installingID != nil { ProgressView().controlSize(.mini); Text("Installing update…") }
-                    else if !model.isLoadingResults { Text("\(model.checkedCount) checked · \(model.unsupported.count) couldn't be checked") }
+                    else if !model.isLoadingResults { Text("\(model.checkedCount) checked · \(model.unsupported.count + model.unverified.count) could not be checked or verified") }
                 }
                 .font(.system(size: 11)).foregroundStyle(.secondary).padding(.horizontal, 20).padding(.vertical, 11)
                 .background(.bar)
