@@ -49,6 +49,6 @@ scripts/build.sh
 open "build/Annoying Updater.app"
 ```
 
-Run `scripts/test.sh` for tests. See [RELEASING.md](RELEASING.md) for universal builds, disk-image packaging, and the GitHub release workflow.
+Run `scripts/test.sh` for tests. To create a universal disk image, run `scripts/build.sh release universal`, then `scripts/package.sh`. The [release workflow](.github/workflows/release.yml) builds and publishes the version in `VERSION` when its matching tag (such as `v1.0`) is pushed.
 
 All rights reserved. See [LICENSE](LICENSE). Third-party licenses are included in the app and in [ThirdPartyNotices.txt](Resources/ThirdPartyNotices.txt).
