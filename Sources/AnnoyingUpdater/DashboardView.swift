@@ -74,12 +74,12 @@ struct DashboardView: View {
                 }
                 Divider()
                 HStack(spacing: 6) {
-                    if model.isChecking { ProgressView().controlSize(.mini); Text("Checking for updates…") }
+                    if model.isLoadingResults { ProgressView().controlSize(.mini); Text("Checking for updates…") }
                     else if let date = model.lastCheck { Image(systemName: "clock"); Text("Last checked \(date.formatted(.relative(presentation: .named)))") }
                     else { Text("Ready to check for updates") }
                     Spacer()
                     if model.installingID != nil { ProgressView().controlSize(.mini); Text("Installing update…") }
-                    else { Text("\(model.checkedCount) checked · \(model.unsupported.count) couldn't be checked") }
+                    else if !model.isLoadingResults { Text("\(model.checkedCount) checked · \(model.unsupported.count) couldn't be checked") }
                 }
                 .font(.system(size: 11)).foregroundStyle(.secondary).padding(.horizontal, 20).padding(.vertical, 11)
                 .background(.bar)
@@ -109,12 +109,12 @@ struct DashboardView: View {
     private var updatesPage: some View {
         VStack(alignment: .leading, spacing: 24) {
             HStack(alignment: .center, spacing: 16) {
-                Image(systemName: model.updates.isEmpty ? (model.unverified.isEmpty && model.unsupported.isEmpty ? "checkmark.circle" : "arrow.triangle.2.circlepath") : "arrow.down.circle")
+                Image(systemName: model.isLoadingResults ? "arrow.triangle.2.circlepath" : model.updates.isEmpty ? (model.unverified.isEmpty && model.unsupported.isEmpty ? "checkmark.circle" : "arrow.triangle.2.circlepath") : "arrow.down.circle")
                     .font(.system(size: 39, weight: .light)).foregroundStyle(Color.accentColor)
                     .frame(width: 62, height: 62).background(Color.accentColor.opacity(0.09), in: RoundedRectangle(cornerRadius: 15))
                 VStack(alignment: .leading, spacing: 5) {
                     Text(headline).font(.system(size: 25, weight: .bold))
-                    Text(model.updates.isEmpty ? "We'll keep an eye on your Mac and your apps." : "Keep your Mac and your apps up to date.")
+                    Text(model.isLoadingResults ? "We're checking your Mac and your apps." : model.updates.isEmpty ? "We'll keep an eye on your Mac and your apps." : "Keep your Mac and your apps up to date.")
                         .font(.system(size: 13)).foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
@@ -142,7 +142,7 @@ struct DashboardView: View {
             let uncertain = filtered.filter { $0.status == .unverified || $0.status == .unsupported }
             let current = filtered.filter { $0.status == .current }
 
-            if !model.search.isEmpty && filtered.isEmpty {
+            if !model.isLoadingResults && !model.search.isEmpty && filtered.isEmpty {
                 ContentUnavailableView.search(text: model.search)
             }
             if !updates.isEmpty {
@@ -155,23 +155,23 @@ struct DashboardView: View {
                     Text("You'll be reminded every 15 minutes until these updates are installed. Apps with their own updater will open so you can finish there.")
                         .fixedSize(horizontal: false, vertical: true)
                 }.font(.system(size: 11)).foregroundStyle(.secondary).padding(.horizontal, 2)
-            } else if model.search.isEmpty && model.updates.isEmpty {
+            } else if model.isLoadingResults || (model.search.isEmpty && model.updates.isEmpty) {
                 VStack(spacing: 12) {
-                    Image(systemName: model.isChecking ? "arrow.triangle.2.circlepath" : "checkmark.shield")
+                    Image(systemName: model.isLoadingResults ? "arrow.triangle.2.circlepath" : "checkmark.shield")
                         .font(.system(size: 38, weight: .light)).foregroundStyle(.secondary)
-                    Text(model.isChecking ? "Looking for updates" : "No confirmed updates").font(.headline)
-                    Text(model.isChecking ? "This can take a few minutes. You can close this window while we check."
+                    Text(model.isLoadingResults ? "Looking for updates" : "No confirmed updates").font(.headline)
+                    Text(model.isLoadingResults ? "This can take a few minutes. You can close this window while we check."
                          : "Updates will appear here as soon as we find them.")
                         .foregroundStyle(.secondary).multilineTextAlignment(.center).frame(maxWidth: 350)
-                    if model.isChecking { ProgressView().controlSize(.small) }
+                    if model.isLoadingResults { ProgressView().controlSize(.small) }
                 }.frame(maxWidth: .infinity).padding(.vertical, 38)
             }
-            if !uncertain.isEmpty { itemGroup("Couldn't Check or Verify", items: uncertain) }
+            if !model.isLoadingResults && !uncertain.isEmpty { itemGroup("Couldn't Check or Verify", items: uncertain) }
             if !current.isEmpty { itemGroup("Up to Date", items: current) }
         }
     }
     private var headline: String {
-        if model.isChecking && model.lastCheck == nil { return "Checking for updates…" }
+        if model.isLoadingResults { return "Checking for updates…" }
         if model.updates.isEmpty { return model.unverified.isEmpty && model.unsupported.isEmpty ? "You're up to date" : "No updates confirmed" }
         return "\(model.updates.count) update\(model.updates.count == 1 ? "" : "s") available"
     }

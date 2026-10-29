@@ -20,6 +20,7 @@ final class AppModel: ObservableObject {
     @Published var reports: [ProviderReport] = []
     @Published var lastCheck: Date?
     @Published var isChecking = false
+    @Published private(set) var hasCompletedScan = false
     @Published var installingID: String?
     @Published var policy = ReminderPolicy()
     @Published var message: String?
@@ -50,6 +51,7 @@ final class AppModel: ObservableObject {
     var unsupported: [UpdateItem] { items.filter { $0.status == .unsupported } }
     var unverified: [UpdateItem] { items.filter { $0.status == .unverified } }
     var checkedCount: Int { items.filter { $0.status == .available || $0.status == .current }.count }
+    var isLoadingResults: Bool { isChecking || !hasCompletedScan }
     var isSnoozed: Bool { policy.isSnoozed(at: now) }
     var snoozeDescription: String {
         guard let until = policy.snoozedUntil, until > now else { return "Every 15 minutes while updates are available" }
@@ -63,6 +65,7 @@ final class AppModel: ObservableObject {
         loginItems = LoginItemController(service: SystemLoginItemService(), defaults: defaults)
         country = defaults.string(forKey: "storeCountry") ?? Locale.current.region?.identifier ?? "US"
         if isDemo {
+            hasCompletedScan = true
             launchAtLogin = true
             items = DemoData.items
             historyEntries = DemoData.history
@@ -132,7 +135,7 @@ final class AppModel: ObservableObject {
         if isDemo {
             try? await Task.sleep(for: .milliseconds(700))
             lastCheck = Date(); lastReminderValidation = Date()
-            isChecking = false; statusDidChange?(); return
+            hasCompletedScan = true; isChecking = false; statusDidChange?(); return
         }
         let result = await ScanService.scan(country: country, ownApp: SoftwareSnapshot.ownApp(at: Bundle.main.bundleURL))
         if let observation = result.observation {
@@ -146,7 +149,7 @@ final class AppModel: ObservableObject {
         }
         let merged = result.preservingLastFindings(from: items)
         items = merged.items; reports = result.reports; lastCheck = result.date
-        lastReminderValidation = Date(); now = Date(); isChecking = false
+        lastReminderValidation = Date(); now = Date(); hasCompletedScan = true; isChecking = false
         saveCache(); statusDidChange?()
         if updates.isEmpty { hideReminder?() }
         tick()
