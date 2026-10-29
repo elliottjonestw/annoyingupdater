@@ -22,11 +22,18 @@ When an update is available, Annoying Updater brings a reminder to the front. Up
 
 - **Finds updates automatically.** Checks macOS, App Store apps, developer feeds, Homebrew, public app catalogs, and more. No per-app setup.
 - **Keeps everything in one place.** See available updates first, apps that need a manual check next, and up-to-date software last.
+- **Remembers what changed.** Local update history records installed version and build changes, including updates made outside Annoying Updater. Pending updates show when they were first detected.
 - **Helps you finish the job.** Installs supported Homebrew updates or takes you to the app, App Store, system updater, or developer's site.
 - **Starts with your Mac.** Open at login is on by default. Close the window and it keeps watch from the menu bar.
 - **Keeps itself updated.** Downloads and verifies its own updates from GitHub, then installs them when you quit or choose Install and Relaunch.
 
 Some apps don't expose a reliable way to check for updates. Annoying Updater clearly marks those as **Couldn't check** or **Couldn't verify**.
+
+## See what changed
+
+History gives you a searchable timeline of installed version and build changes, including updates made by other apps or installed manually. Open an entry to see the before and after, when the change was detected, and when its update was first detected, if known.
+
+Tracking starts with your first scan. History stays on your Mac, and you can clear it at any time.
 
 ## Install
 
@@ -34,7 +41,7 @@ Some apps don't expose a reliable way to check for updates. Annoying Updater cle
 2. Open it and drag **Annoying Updater** to **Applications**.
 3. Eject the disk image and open the app.
 
-The initial release isn't Developer ID signed or notarized. If macOS blocks it, follow [Apple's instructions to open an app from an unidentified developer](https://support.apple.com/en-us/102445).
+The app isn't Developer ID signed or notarized yet. If macOS blocks it, follow [Apple's instructions to open an app from an unidentified developer](https://support.apple.com/en-us/102445).
 
 ## Private by design
 
@@ -49,6 +56,6 @@ scripts/build.sh
 open "build/Annoying Updater.app"
 ```
 
-Run `scripts/test.sh` for tests. To create a universal disk image, run `scripts/build.sh release universal`, then `scripts/package.sh`. The [release workflow](.github/workflows/release.yml) builds and publishes the version in `VERSION` when its matching tag (such as `v1.0`) is pushed.
+Run `scripts/test.sh` for tests. To create a universal disk image, run `scripts/build.sh release universal`, then `scripts/package.sh`. The [release workflow](.github/workflows/release.yml) builds and publishes the version in `VERSION` when its matching tag (such as `v1.1`) is pushed.
 
 All rights reserved. See [LICENSE](LICENSE). Third-party licenses are included in the app and in [ThirdPartyNotices.txt](Resources/ThirdPartyNotices.txt).

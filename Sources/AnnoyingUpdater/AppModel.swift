@@ -7,6 +7,14 @@ import UpdaterCore
 final class AppModel: ObservableObject {
     @Published var selection: SidebarPage? = .updates
     @Published var search = ""
+    @Published var historySearch = ""
+    @Published var historyEntries: [UpdateHistoryEntry] = []
+    @Published var historyStartedAt: Date?
+    @Published var historyError: String?
+    @Published var isClearingHistory = false
+    @Published var showClearHistoryConfirmation = false
+    @Published var expandedHistoryIDs: Set<String> = []
+    @Published private var firstDetected: [HistoryOffer: Date] = [:]
     @Published var expandedIDs: Set<String> = []
     @Published var items: [UpdateItem] = []
     @Published var reports: [ProviderReport] = []
@@ -29,6 +37,8 @@ final class AppModel: ObservableObject {
     private let defaults: UserDefaults
     private let loginItems: LoginItemController
     private var heartbeat: Timer?
+    private var historyStore: UpdateHistoryStore?
+    private var lastObservation: HistoryObservation?
     private var observers: [NSObjectProtocol] = []
     private var sessionAvailable = true
     private var lastReminderValidation: Date?
@@ -55,6 +65,11 @@ final class AppModel: ObservableObject {
         if isDemo {
             launchAtLogin = true
             items = DemoData.items
+            historyEntries = DemoData.history
+            historyStartedAt = Date().addingTimeInterval(-14 * 86400)
+            firstDetected = Dictionary(items.filter { $0.status == .available }.compactMap { item in
+                HistoryOffer(item: item).map { ($0, Date().addingTimeInterval(-2 * 86400)) }
+            }, uniquingKeysWith: { first, _ in first })
             reports = DemoData.reports
             lastCheck = Date()
         } else {
@@ -93,13 +108,13 @@ final class AppModel: ObservableObject {
                 Task { @MainActor in self?.sessionAvailable = false; self?.hideReminder?() }
             })
         }
-        if !isDemo { Task { await check() } }
+        if !isDemo { Task { await loadHistory(); await check() } }
     }
 
     func tick() {
         now = Date(); statusDidChange?()
         guard !isDemo || demoRemindersEnabled else { return }
-        guard sessionAvailable, installingID == nil, !isChecking else { return }
+        guard sessionAvailable, installingID == nil, !isChecking, !isClearingHistory else { return }
         if !isDemo && (lastCheck == nil || now.timeIntervalSince(lastCheck!) >= 3600) {
             Task { await check() }; return
         }
@@ -112,14 +127,23 @@ final class AppModel: ObservableObject {
     }
 
     func check() async {
-        guard !isChecking, installingID == nil else { return }
+        guard !isChecking, installingID == nil, !isClearingHistory else { return }
         isChecking = true; statusDidChange?()
         if isDemo {
             try? await Task.sleep(for: .milliseconds(700))
             lastCheck = Date(); lastReminderValidation = Date()
             isChecking = false; statusDidChange?(); return
         }
-        let result = await ScanService.scan(country: country)
+        let result = await ScanService.scan(country: country, ownApp: SoftwareSnapshot.ownApp(at: Bundle.main.bundleURL))
+        if let observation = result.observation {
+            lastObservation = observation
+            if let historyStore {
+                do {
+                    applyHistory(try await historyStore.record(observation, items: result.items, checkedAt: result.date))
+                    historyError = nil
+                } catch { historyError = "History couldn't be saved. Update checks are still working. \(error.localizedDescription)" }
+            }
+        }
         let merged = result.preservingLastFindings(from: items)
         items = merged.items; reports = result.reports; lastCheck = result.date
         lastReminderValidation = Date(); now = Date(); isChecking = false
@@ -135,13 +159,19 @@ final class AppModel: ObservableObject {
     }
 
     func update(_ item: UpdateItem) async {
-        guard installingID == nil, !isChecking else { return }
+        guard installingID == nil, !isChecking, !isClearingHistory else { return }
         message = nil
         if isDemo {
             installingID = item.id; hideReminder?()
             try? await Task.sleep(for: .seconds(1.2))
             if let index = items.firstIndex(where: { $0.id == item.id }) {
-                items[index].installedVersion = item.availableVersion ?? item.installedVersion
+                let version = item.availableVersion ?? item.installedVersion
+                let snapshot = SoftwareSnapshot(id: item.id, name: item.name, bundleID: item.bundleID,
+                    path: item.path, version: version, kind: item.source == .system ? .macOS : .application)
+                historyEntries.insert(UpdateHistoryEntry(software: snapshot, previousVersion: item.installedVersion,
+                    change: .updated, detectedAt: Date(), previouslyObservedAt: lastCheck ?? Date(),
+                    firstDetectedAvailableAt: firstDetectedDate(for: item)), at: 0)
+                items[index].installedVersion = version
                 items[index].availableVersion = nil; items[index].status = .current
                 items[index].detail = "Updated in preview. No installed software was changed."
             }
@@ -194,6 +224,41 @@ final class AppModel: ObservableObject {
         case .microsoft, .none:
             showError("Direct installation isn't available for this app yet. Open its own updater to continue.")
         }
+    }
+
+    func firstDetectedDate(for item: UpdateItem) -> Date? {
+        guard item.status == .available || item.status == .unverified, let offer = HistoryOffer(item: item) else { return nil }
+        return firstDetected[offer]
+    }
+    private func applyHistory(_ contents: HistoryContents) {
+        historyEntries = contents.entries; firstDetected = contents.firstDetected; historyStartedAt = contents.startedAt
+    }
+    func loadHistory() async {
+        guard !isDemo else { return }
+        do {
+            if historyStore == nil {
+                historyStore = try UpdateHistoryStore(url: cacheURL.deletingLastPathComponent().appendingPathComponent("history.sqlite"))
+            }
+            if let historyStore { applyHistory(try await historyStore.contents()) }
+            historyError = nil
+        } catch { historyError = "History couldn't be opened. Update checks are still working. \(error.localizedDescription)" }
+    }
+    func clearHistory() async {
+        guard !isChecking, !isClearingHistory else { return }
+        isClearingHistory = true
+        defer { isClearingHistory = false }
+        if isDemo {
+            historyEntries = []; expandedHistoryIDs = []; historySearch = ""; historyStartedAt = Date()
+            firstDetected = Dictionary(items.filter { $0.status == .available }.compactMap { item in
+                HistoryOffer(item: item).map { ($0, Date()) }
+            }, uniquingKeysWith: { first, _ in first })
+            return
+        }
+        guard let historyStore else { return }
+        do {
+            applyHistory(try await historyStore.clear(observation: lastObservation, items: items))
+            expandedHistoryIDs = []; historySearch = ""; historyError = nil
+        } catch { historyError = "History couldn't be cleared. \(error.localizedDescription)" }
     }
 
     func showError(_ text: String) { messageIsError = true; message = text }

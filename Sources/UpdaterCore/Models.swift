@@ -77,9 +77,11 @@ public struct InstalledApp: Sendable {
     public let build: String
     public let feedURL: URL?
     public let isAppStore: Bool
-    public init(path: String, name: String, bundleID: String, version: String, build: String, feedURL: URL? = nil, isAppStore: Bool = false) {
+    /// The stable visible location, before resolving a Homebrew/versioned symlink.
+    public let installationPath: String?
+    public init(path: String, name: String, bundleID: String, version: String, build: String, feedURL: URL? = nil, isAppStore: Bool = false, installationPath: String? = nil) {
         self.path = path; self.name = name; self.bundleID = bundleID; self.version = version
-        self.build = build; self.feedURL = feedURL; self.isAppStore = isAppStore
+        self.build = build; self.feedURL = feedURL; self.isAppStore = isAppStore; self.installationPath = installationPath
     }
     public var item: UpdateItem {
         UpdateItem(id: path, name: name, bundleID: bundleID, path: path, installedVersion: version,
@@ -102,8 +104,9 @@ public struct ScanResult: Codable, Sendable {
     public var items: [UpdateItem]
     public var reports: [ProviderReport]
     public var date: Date
-    public init(items: [UpdateItem], reports: [ProviderReport], date: Date = Date()) {
-        self.items = items; self.reports = reports; self.date = date
+    public var observation: HistoryObservation?
+    public init(items: [UpdateItem], reports: [ProviderReport], date: Date = Date(), observation: HistoryObservation? = nil) {
+        self.items = items; self.reports = reports; self.date = date; self.observation = observation
     }
 
     /// Keep historical findings visible on failure, without making them eligible for a fresh reminder.

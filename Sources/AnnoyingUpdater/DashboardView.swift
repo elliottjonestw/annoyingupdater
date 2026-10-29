@@ -3,10 +3,10 @@ import SwiftUI
 import UpdaterCore
 
 enum SidebarPage: String, CaseIterable, Identifiable {
-    case updates = "Updates", sources = "Update Sources"
+    case updates = "Updates", history = "History", sources = "Update Sources"
     var id: String { rawValue }
     var symbol: String {
-        switch self { case .updates: return "arrow.down.circle"; case .sources: return "network" }
+        switch self { case .updates: return "arrow.down.circle"; case .history: return "clock.arrow.circlepath"; case .sources: return "network" }
     }
 }
 
@@ -19,6 +19,7 @@ struct DashboardView: View {
                 List(selection: $model.selection) {
                     Section("Library") {
                         Label("Updates", systemImage: SidebarPage.updates.symbol).badge(model.updates.count).tag(SidebarPage.updates)
+                        Label("History", systemImage: SidebarPage.history.symbol).tag(SidebarPage.history)
                     }
                     Section("Monitoring") {
                         Label("Update Sources", systemImage: SidebarPage.sources.symbol).tag(SidebarPage.sources)
@@ -40,7 +41,7 @@ struct DashboardView: View {
                     HStack(spacing: 7) {
                         Image(systemName: "eye")
                         Text("Preview").fontWeight(.medium)
-                        Text("Sample updates. Your apps won't be changed.").foregroundStyle(.secondary)
+                        Text("Sample updates and history. Your apps won't be changed.").foregroundStyle(.secondary)
                         Spacer()
                         Button("Show Reminder") { model.presentReminder?() }.buttonStyle(.link)
                     }
@@ -63,6 +64,7 @@ struct DashboardView: View {
                     VStack(alignment: .leading, spacing: 24) {
                         switch model.selection ?? .updates {
                         case .updates: updatesPage
+                        case .history: HistoryView(model: model)
                         case .sources: sourcesPage
                         }
                     }
@@ -85,6 +87,13 @@ struct DashboardView: View {
             .background(Color(nsColor: .windowBackgroundColor))
             .navigationTitle((model.selection ?? .updates).rawValue)
             .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    if model.selection == .history {
+                        Button { model.showClearHistoryConfirmation = true } label: { Label("Clear History…", systemImage: "trash") }
+                            .help("Clear locally stored update history")
+                            .disabled(model.historyStartedAt == nil || model.historyError != nil || model.isChecking || model.isClearingHistory)
+                    }
+                }
                 ToolbarItemGroup(placement: .primaryAction) {
                     Button { model.snooze() } label: { Label("Snooze", systemImage: "clock.badge") }
                         .help("Snooze reminders for 15 minutes").disabled(model.updates.isEmpty || model.isSnoozed)
@@ -260,6 +269,10 @@ struct UpdateRow: View {
             if expanded {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(item.detail).font(.system(size: 12)).foregroundStyle(.secondary).textSelection(.enabled)
+                    if let firstSeen = model.firstDetectedDate(for: item) {
+                        Text("First detected \(firstSeen.formatted(date: .abbreviated, time: .shortened))")
+                            .font(.system(size: 11)).foregroundStyle(.secondary)
+                    }
                     if item.status != .available && item.status != .current && item.action != .none {
                         Button(item.action.title) { Task { await model.update(item) } }.font(.system(size: 12))
                     }

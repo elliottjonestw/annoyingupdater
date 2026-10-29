@@ -1,8 +1,12 @@
 import Foundation
 
 public enum ScanService {
-    public static func scan(country: String = "US") async -> ScanResult {
-        let apps = await Task.detached(priority: .utility) { Inventory.discover() }.value
+    public static func scan(country: String = "US", ownApp: SoftwareSnapshot? = nil) async -> ScanResult {
+        let inventory = await Task.detached(priority: .utility) { Inventory.inspect() }.value
+        let apps = inventory.apps
+        var snapshots = apps.map(SoftwareSnapshot.init(app:)) + [SoftwareSnapshot.operatingSystem]
+        if let ownApp { snapshots.append(ownApp) }
+        let observation = HistoryObservation(software: snapshots, uncertainPaths: inventory.uncertainPaths)
         async let system = SystemProvider.check()
         async let brew = HomebrewProvider.check(apps)
         async let store = AppStoreProvider.check(apps.filter(\.isAppStore), country: country)
@@ -40,6 +44,6 @@ public enum ScanService {
         reports.append(ProviderReport("Microsoft AutoUpdate", FileManager.default.fileExists(atPath: mau) ? "Use Microsoft AutoUpdate for apps without a published feed" : "Not installed"))
         // MAU's listing schema and external Sparkle installation need a real-device
         // feasibility pass. Do not fabricate support or execute unverified installers.
-        return ScanResult(items: systemItems + items, reports: reports)
+        return ScanResult(items: systemItems + items, reports: reports, observation: observation)
     }
 }

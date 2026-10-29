@@ -13,7 +13,8 @@ let package = Package(
         .package(url: "https://github.com/sparkle-project/Sparkle.git", exact: "2.10.1")
     ],
     targets: [
-        .target(name: "UpdaterCore", dependencies: [.product(name: "Yams", package: "Yams")]),
+        .systemLibrary(name: "CSQLite"),
+        .target(name: "UpdaterCore", dependencies: ["CSQLite", .product(name: "Yams", package: "Yams")]),
         .executableTarget(name: "AnnoyingUpdater", dependencies: ["UpdaterCore", .product(name: "Sparkle", package: "Sparkle")],
                           linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]),
         .executableTarget(name: "UpdaterProbe", dependencies: ["UpdaterCore"]),
