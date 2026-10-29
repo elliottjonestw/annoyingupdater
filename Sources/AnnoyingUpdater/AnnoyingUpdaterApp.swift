@@ -82,17 +82,11 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 self?.model.snooze(); self?.showDashboard()
             })
             let controller = NSHostingController(rootView: view)
-            let window = NSWindow(contentViewController: controller)
-            window.styleMask = [.titled, .closable, .fullSizeContentView]
-            window.title = "Software Updates"; window.titleVisibility = .hidden
-            window.titlebarAppearsTransparent = true
-            window.isReleasedWhenClosed = false; window.delegate = self
-            window.level = .floating
-            window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+            let window = ReminderPanel(contentViewController: controller)
+            window.delegate = self
             window.center(); reminder = window
         }
         reminder?.makeKeyAndOrderFront(nil); reminder?.orderFrontRegardless()
-        NSApp.activate(ignoringOtherApps: true)
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
