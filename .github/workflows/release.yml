@@ -1,0 +1,78 @@
+name: Release macOS app
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Test (${{ matrix.runner }})
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, macos-15-intel]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Validate version and tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python3 scripts/validate-release.py --tag "$RELEASE_TAG"
+      - run: python3 -m unittest discover -s scripts/tests -v
+      - run: scripts/test.sh
+
+  release:
+    name: Build and publish universal DMG
+    needs: test
+    runs-on: macos-15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Validate release prerequisites
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          python3 scripts/validate-release.py --tag "$RELEASE_TAG"
+          if [ -z "$SPARKLE_PRIVATE_KEY" ]; then
+            echo 'Configure the SPARKLE_PRIVATE_KEY repository secret before releasing.' >&2
+            exit 1
+          fi
+      - name: Build optimized Apple silicon and Intel application
+        run: scripts/build.sh release universal
+      - name: Build drag-to-Applications disk image
+        run: scripts/package.sh
+      - name: Sign update and appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: scripts/generate-appcast.sh
+      - name: Publish complete release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          version="$(cat VERSION)"
+          # Keep the feed invisible until the DMG and signatures are uploaded.
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --verify-tag --draft \
+              --title "Annoying Updater $version" --generate-notes
+          fi
+          if [ "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" != true ]; then
+            echo 'Refusing to overwrite a published release. Bump VERSION and create a new tag.' >&2
+            exit 1
+          fi
+          gh release upload "$RELEASE_TAG" \
+            "dist/AnnoyingUpdater-$version-universal.dmg" dist/appcast.xml dist/SHA256SUMS.txt --clobber
+          gh release edit "$RELEASE_TAG" --draft=false --latest

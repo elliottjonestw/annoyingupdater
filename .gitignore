@@ -1,0 +1,16 @@
+.build/
+.swiftpm/
+build/
+dist/
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+.env
+.env.*
+*.p12
+*.p8
+*.key
+*.pem
+*private-key*
+.release-secrets/
