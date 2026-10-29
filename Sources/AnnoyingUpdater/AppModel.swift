@@ -28,6 +28,7 @@ final class AppModel: ObservableObject {
     @Published var launchAtLogin = SMAppService.mainApp.status == .enabled
     @Published var loginNeedsApproval = false
     @Published var country: String
+    @Published private(set) var appearance: AppAppearance
     @Published var now = Date()
     let isDemo: Bool
     var demoRemindersEnabled = false
@@ -35,6 +36,7 @@ final class AppModel: ObservableObject {
     var hideReminder: (() -> Void)?
     var reminderVisible: (() -> Bool)?
     var statusDidChange: (() -> Void)?
+    var appearanceDidChange: ((AppAppearance) -> Void)?
     private let defaults: UserDefaults
     private let loginItems: LoginItemController
     private var heartbeat: Timer?
@@ -64,6 +66,7 @@ final class AppModel: ObservableObject {
         defaults = isDemo ? UserDefaults(suiteName: "com.annoyingupdater.preview")! : .standard
         loginItems = LoginItemController(service: SystemLoginItemService(), defaults: defaults)
         country = defaults.string(forKey: "storeCountry") ?? Locale.current.region?.identifier ?? "US"
+        appearance = defaults.string(forKey: "appearance").flatMap(AppAppearance.init(rawValue:)) ?? .light
         if isDemo {
             hasCompletedScan = true
             launchAtLogin = true
@@ -296,6 +299,11 @@ final class AppModel: ObservableObject {
     func openLoginItemSettings() { if !isDemo { SMAppService.openSystemSettingsLoginItems() } }
     func setCountry(_ country: String) {
         self.country = country; if !isDemo { defaults.set(country, forKey: "storeCountry") }
+    }
+    func setAppearance(_ appearance: AppAppearance) {
+        self.appearance = appearance
+        defaults.set(appearance.rawValue, forKey: "appearance")
+        appearanceDidChange?(appearance)
     }
     private func saveCache() {
         guard !isDemo, let lastCheck else { return }

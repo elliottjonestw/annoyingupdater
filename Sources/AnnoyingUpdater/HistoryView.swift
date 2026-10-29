@@ -135,7 +135,7 @@ private struct HistoryRow: View {
                     }
                     LabeledContent("Previously observed", value: entry.previouslyObservedAt.formatted(date: .abbreviated, time: .shortened))
                     LabeledContent("Change detected", value: entry.detectedAt.formatted(date: .abbreviated, time: .shortened))
-                    if let path = entry.software.path { Text(path).font(.system(size: 10, design: .monospaced)).foregroundStyle(.tertiary) }
+                    if let path = entry.software.path { Text(path).font(.system(size: 10, design: .monospaced)).foregroundStyle(.secondary) }
                     Text("The installed version changed between these observations. The exact installation time isn't known.")
                         .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }

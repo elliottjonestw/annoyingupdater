@@ -12,6 +12,12 @@ struct SettingsView: View {
                         Button("Open Login Items…") { model.openLoginItemSettings() }
                     }
                 }
+                Picker("Appearance", selection: Binding(get: { model.appearance }, set: { model.setAppearance($0) })) {
+                    ForEach(AppAppearance.allCases) { appearance in
+                        Text(appearance.rawValue).tag(appearance)
+                    }
+                }
+                .pickerStyle(.segmented)
                 LabeledContent("Check for updates", value: "Every hour")
                 LabeledContent("Snooze duration", value: "15 minutes")
             } header: { Text("General") } footer: {

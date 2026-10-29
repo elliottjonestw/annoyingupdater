@@ -21,8 +21,19 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private var reminder: NSWindow?
     private var settings: NSWindow?
     private var statusItem: NSStatusItem?
+    private var appearanceObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.appearance = model.appearance.nativeAppearance
+        model.appearanceDidChange = { NSApp.appearance = $0.nativeAppearance }
+        appearanceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                NSApp.appearance = self.model.appearance.nativeAppearance
+            }
+        }
         selfUpdater.start()
         installMenus()
         let status = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)

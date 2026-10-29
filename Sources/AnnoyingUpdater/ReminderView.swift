@@ -44,7 +44,7 @@ struct ReminderView: View {
                 Button { model.snooze() } label: { Text("Snooze for 15 Minutes").frame(maxWidth: .infinity) }
                     .buttonStyle(.bordered).controlSize(.large).keyboardShortcut(.cancelAction)
                 Text("We'll remind you again if updates are still available.")
-                    .font(.system(size: 10)).foregroundStyle(.tertiary).padding(.top, 5)
+                    .font(.system(size: 10)).foregroundStyle(.secondary).padding(.top, 5)
             }.padding(28)
         }.frame(width: 400)
             .background(Color(nsColor: .windowBackgroundColor))
