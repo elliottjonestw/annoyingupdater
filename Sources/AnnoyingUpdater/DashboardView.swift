@@ -132,11 +132,24 @@ struct DashboardView: View {
                 }.padding(14).background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 10))
             }
 
+            if !model.finderSelectedPaths.isEmpty {
+                HStack {
+                    Label("Apps selected in Finder", systemImage: "folder")
+                    Spacer()
+                    Button("Show All") { model.finderSelectedPaths = [] }
+                }.font(.callout).foregroundStyle(.secondary)
+                if !model.isLoadingResults && !model.items.contains(where: { model.finderSelectedPaths.contains($0.path ?? "") }) {
+                    Text("The selected apps are unavailable or couldn't be read. They will be checked again when accessible.").font(.callout).foregroundStyle(.secondary)
+                }
+            }
             TextField("Search software", text: $model.search)
                 .textFieldStyle(.roundedBorder)
                 .accessibilityLabel("Search software")
 
-            let filtered = model.items.filter { model.search.isEmpty || $0.name.localizedCaseInsensitiveContains(model.search) }
+            let filtered = model.items.filter {
+                (model.finderSelectedPaths.isEmpty || model.finderSelectedPaths.contains($0.path ?? "")) &&
+                (model.search.isEmpty || $0.name.localizedCaseInsensitiveContains(model.search))
+            }
                 .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
             let updates = filtered.filter { $0.status == .available }
             let uncertain = filtered.filter { $0.status == .unverified || $0.status == .unsupported }

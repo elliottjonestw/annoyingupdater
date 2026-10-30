@@ -19,6 +19,7 @@ enum AnnoyingUpdaterApp {
 final class ApplicationDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuDelegate {
     private let model = AppModel(isDemo: ProcessInfo.processInfo.arguments.contains("--demo"))
     private let selfUpdater = SelfUpdater(isDemo: ProcessInfo.processInfo.arguments.contains("--demo"))
+    private let finderService = FinderService()
     private var dashboard: NSWindow?
     private var reminder: NSWindow?
     private var settings: NSWindow?
@@ -51,6 +52,12 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         let isLoginLaunch = NSAppleEventManager.shared().currentAppleEvent?.paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue == keyAELaunchedAsLogInItem
         if !isLoginLaunch { showDashboard() } else { NSApp.setActivationPolicy(.accessory) }
         model.start()
+        finderService.check = { [weak self] paths in
+            self?.model.checkFinderApplications(paths)
+            self?.showDashboard()
+        }
+        NSApp.servicesProvider = finderService
+        NSUpdateDynamicServices()
         if ProcessInfo.processInfo.arguments.contains("--show-reminder") { showReminder() }
     }
 

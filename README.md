@@ -61,3 +61,5 @@ open "build/Annoying Updater.app"
 Run `scripts/test.sh` for tests. To create a universal disk image, run `scripts/build.sh release universal`, then `scripts/package.sh`. The [release workflow](.github/workflows/release.yml) builds and publishes the version in `VERSION` when its matching tag (such as `v1.3`) is pushed.
 
 All rights reserved. See [LICENSE](LICENSE). Third-party licenses are included in the app and in [ThirdPartyNotices.txt](Resources/ThirdPartyNotices.txt).
+
+In Finder, select one or more apps and choose **Services → Check with Annoying Updater**. Install Annoying Updater in Applications first. If the service is hidden, enable it in System Settings → Keyboard → Keyboard Shortcuts → Services. Selected apps are checked with the same automatic sources and remain monitored when accessible.

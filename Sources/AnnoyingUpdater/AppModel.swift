@@ -7,6 +7,7 @@ import UpdaterCore
 final class AppModel: ObservableObject {
     @Published var selection: SidebarPage? = .updates
     @Published var search = ""
+    @Published var finderSelectedPaths: Set<String> = []
     @Published var historySearch = ""
     @Published var historyEntries: [UpdateHistoryEntry] = []
     @Published var historyStartedAt: Date?
@@ -47,6 +48,7 @@ final class AppModel: ObservableObject {
     private var lastReminderValidation: Date?
     private var discoveryRefresh: Task<Void, Never>?
     private var discoveryRefreshPending = false
+    private var finderCheckPending = false
     private var cacheURL: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("Annoying Updater/last-scan.json")
@@ -129,6 +131,7 @@ final class AppModel: ObservableObject {
         now = Date(); statusDidChange?()
         guard !isDemo || demoRemindersEnabled else { return }
         guard sessionAvailable, installingID == nil, !isChecking, !isClearingHistory else { return }
+        if finderCheckPending { Task { await check() }; return }
         if !isDemo && (lastCheck == nil || now.timeIntervalSince(lastCheck!) >= 3600) {
             Task { await check() }; return
         }
@@ -142,13 +145,13 @@ final class AppModel: ObservableObject {
 
     func check() async {
         guard !isChecking, installingID == nil, !isClearingHistory else { return }
-        isChecking = true; statusDidChange?()
+        isChecking = true; finderCheckPending = false; statusDidChange?()
         if isDemo {
             try? await Task.sleep(for: .milliseconds(700))
             lastCheck = Date(); lastReminderValidation = Date()
             hasCompletedScan = true; isChecking = false; statusDidChange?(); return
         }
-        let knownPaths = items.filter { $0.kind == .application }.compactMap { $0.installationPath ?? $0.path }
+        let knownPaths = items.filter { $0.kind == .application }.compactMap { $0.installationPath ?? $0.path } + (defaults.stringArray(forKey: "finderAppPaths") ?? [])
         let result = await ScanService.scan(country: country, ownApp: SoftwareSnapshot.ownApp(at: Bundle.main.bundleURL), knownAppPaths: knownPaths)
         if let observation = result.observation {
             lastObservation = observation
@@ -165,7 +168,16 @@ final class AppModel: ObservableObject {
         saveCache(); statusDidChange?()
         if updates.isEmpty { hideReminder?() }
         tick()
-        if discoveryRefreshPending { discoveryRefreshPending = false; scheduleDiscoveryRefresh() }
+        if finderCheckPending { Task { await check() } }
+        else if discoveryRefreshPending { discoveryRefreshPending = false; scheduleDiscoveryRefresh() }
+    }
+
+    func checkFinderApplications(_ paths: [String]) {
+        selection = .updates; search = ""; finderSelectedPaths = Set(paths)
+        let previous = defaults.stringArray(forKey: "finderAppPaths") ?? []
+        defaults.set(Array(Set(previous + paths)).sorted(), forKey: "finderAppPaths")
+        finderCheckPending = true
+        Task { await check() }
     }
 
     private func scheduleDiscoveryRefresh() {
