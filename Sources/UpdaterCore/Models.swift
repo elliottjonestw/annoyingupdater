@@ -62,20 +62,22 @@ public struct UpdateItem: Identifiable, Codable, Equatable, Sendable {
     public var checkedAt: Date?
     public var verificationIssue: VerificationIssue?
     public var softwareKind: SoftwareKind?
+    public var installationPath: String?
     public var kind: SoftwareKind { softwareKind ?? (source == .system ? .macOS : .application) }
 
     public init(id: String, name: String, bundleID: String = "", path: String? = nil, installedVersion: String,
                 availableVersion: String? = nil, source: UpdateSource, status: UpdateStatus, action: UpdateAction = .none,
-                detail: String = "", checkedAt: Date? = nil, verificationIssue: VerificationIssue? = nil, softwareKind: SoftwareKind? = nil) {
+                detail: String = "", checkedAt: Date? = nil, verificationIssue: VerificationIssue? = nil, softwareKind: SoftwareKind? = nil, installationPath: String? = nil) {
         self.id = id; self.name = name; self.bundleID = bundleID; self.path = path
         self.installedVersion = installedVersion; self.availableVersion = availableVersion
         self.source = source; self.status = status; self.action = action; self.detail = detail; self.checkedAt = checkedAt
         self.verificationIssue = verificationIssue
         self.softwareKind = softwareKind
+        self.installationPath = installationPath
     }
 }
 
-public struct InstalledApp: Sendable {
+public struct InstalledApp: Codable, Sendable {
     public let path: String
     public let name: String
     public let bundleID: String
@@ -85,14 +87,16 @@ public struct InstalledApp: Sendable {
     public let isAppStore: Bool
     /// The stable visible location, before resolving a Homebrew/versioned symlink.
     public let installationPath: String?
-    public init(path: String, name: String, bundleID: String, version: String, build: String, feedURL: URL? = nil, isAppStore: Bool = false, installationPath: String? = nil) {
+    public let installationIdentity: String?
+    public init(path: String, name: String, bundleID: String, version: String, build: String, feedURL: URL? = nil, isAppStore: Bool = false, installationPath: String? = nil, installationIdentity: String? = nil) {
         self.path = path; self.name = name; self.bundleID = bundleID; self.version = version
         self.build = build; self.feedURL = feedURL; self.isAppStore = isAppStore; self.installationPath = installationPath
+        self.installationIdentity = installationIdentity
     }
     public var item: UpdateItem {
         UpdateItem(id: path, name: name, bundleID: bundleID, path: path, installedVersion: version,
                    source: .unknown, status: .unsupported, action: .openApp(path),
-                   detail: "This app doesn't expose a supported update source. You might be able to check for updates by opening the app.")
+                   detail: "This app doesn't expose a supported update source. You might be able to check for updates by opening the app.", installationPath: installationPath)
     }
 }
 

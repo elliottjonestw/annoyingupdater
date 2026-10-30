@@ -45,6 +45,8 @@ final class AppModel: ObservableObject {
     private var observers: [NSObjectProtocol] = []
     private var sessionAvailable = true
     private var lastReminderValidation: Date?
+    private var discoveryRefresh: Task<Void, Never>?
+    private var discoveryRefreshPending = false
     private var cacheURL: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("Annoying Updater/last-scan.json")
@@ -100,6 +102,12 @@ final class AppModel: ObservableObject {
             Task { @MainActor in self?.tick() }
         }
         let center = NSWorkspace.shared.notificationCenter
+        for event in [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didMountNotification,
+                      NSWorkspace.didUnmountNotification, NSWorkspace.didRenameVolumeNotification] {
+            observers.append(center.addObserver(forName: event, object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor in self?.scheduleDiscoveryRefresh() }
+            })
+        }
         for event in [NSWorkspace.didWakeNotification, NSWorkspace.screensDidWakeNotification, NSWorkspace.sessionDidBecomeActiveNotification] {
             observers.append(center.addObserver(forName: event, object: nil, queue: .main) { [weak self] _ in
                 Task { @MainActor in
@@ -140,7 +148,8 @@ final class AppModel: ObservableObject {
             lastCheck = Date(); lastReminderValidation = Date()
             hasCompletedScan = true; isChecking = false; statusDidChange?(); return
         }
-        let result = await ScanService.scan(country: country, ownApp: SoftwareSnapshot.ownApp(at: Bundle.main.bundleURL))
+        let knownPaths = items.filter { $0.kind == .application }.compactMap { $0.installationPath ?? $0.path }
+        let result = await ScanService.scan(country: country, ownApp: SoftwareSnapshot.ownApp(at: Bundle.main.bundleURL), knownAppPaths: knownPaths)
         if let observation = result.observation {
             lastObservation = observation
             if let historyStore {
@@ -156,6 +165,19 @@ final class AppModel: ObservableObject {
         saveCache(); statusDidChange?()
         if updates.isEmpty { hideReminder?() }
         tick()
+        if discoveryRefreshPending { discoveryRefreshPending = false; scheduleDiscoveryRefresh() }
+    }
+
+    private func scheduleDiscoveryRefresh() {
+        guard !isDemo else { return }
+        discoveryRefresh?.cancel()
+        discoveryRefresh = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled, let self else { return }
+            if self.isChecking || self.installingID != nil || self.isClearingHistory {
+                self.discoveryRefreshPending = true
+            } else { await self.check() }
+        }
     }
 
     func snooze() {

@@ -4,10 +4,15 @@ import UpdaterCore
 @main
 enum UpdaterProbe {
     static func main() async throws {
+        if InventoryWorker.handleCommandLine() { return }
         let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         if CommandLine.arguments.contains("--inventory") {
             let items = Inventory.discover().map(\.item)
             FileHandle.standardOutput.write(try encoder.encode(items))
+        } else if CommandLine.arguments.contains("--expanded-inventory") {
+            let result = await ApplicationDiscovery.inspect()
+            FileHandle.standardOutput.write(try encoder.encode(ScanResult(items: result.inventory.apps.map(\.item), reports: [result.report],
+                observation: HistoryObservation(software: result.inventory.apps.map(SoftwareSnapshot.init(app:)), uncertainPaths: result.inventory.uncertainPaths))))
         } else if let index = CommandLine.arguments.firstIndex(of: "--provider"), CommandLine.arguments.indices.contains(index + 1) {
             let apps = Inventory.discover().filter { !$0.isAppStore }
             let name = CommandLine.arguments[index + 1]

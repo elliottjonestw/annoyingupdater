@@ -23,7 +23,7 @@ public struct SoftwareSnapshot: Codable, Equatable, Sendable, Identifiable {
     }
     public init(app: InstalledApp) {
         let location = app.installationPath ?? app.path
-        self.init(id: location, name: app.name, bundleID: app.bundleID, path: location, version: app.version, build: app.build, resolvedPath: app.path)
+        self.init(id: app.installationIdentity ?? location, name: app.name, bundleID: app.bundleID, path: location, version: app.version, build: app.build, resolvedPath: app.path)
     }
     public static func ownApp(at url: URL) -> SoftwareSnapshot? {
         guard let data = try? Data(contentsOf: url.appendingPathComponent("Contents/Info.plist")),

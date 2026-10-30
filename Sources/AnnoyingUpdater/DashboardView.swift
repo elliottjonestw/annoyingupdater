@@ -249,6 +249,10 @@ struct UpdateRow: View {
                 AppIconView(item: item)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(item.name).font(.system(size: 13, weight: .semibold)).lineLimit(1)
+                    if item.kind == .application, let path = item.installationPath ?? item.path,
+                       !path.hasPrefix("/Applications/"), !path.hasPrefix(FileManager.default.homeDirectoryForCurrentUser.path + "/Applications/") {
+                        Text((path as NSString).abbreviatingWithTildeInPath).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                    }
                     HStack(spacing: 5) {
                         Text(item.installedVersion)
                         if let version = item.availableVersion { Image(systemName: "arrow.right").font(.system(size: 9)); Text(version) }
@@ -273,6 +277,11 @@ struct UpdateRow: View {
             if expanded {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(item.detail).font(.system(size: 12)).foregroundStyle(.secondary).textSelection(.enabled)
+                    if item.kind == .application, let path = item.installationPath ?? item.path {
+                        Text(path).font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary)
+                        Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)]) }
+                            .font(.system(size: 12))
+                    }
                     if let firstSeen = model.firstDetectedDate(for: item) {
                         Text("First detected \(firstSeen.formatted(date: .abbreviated, time: .shortened))")
                             .font(.system(size: 11)).foregroundStyle(.secondary)

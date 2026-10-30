@@ -1,10 +1,12 @@
 import AppKit
 import SwiftUI
+import UpdaterCore
 
 @main
 enum AnnoyingUpdaterApp {
     @MainActor
     static func main() {
+        if InventoryWorker.handleCommandLine() { return }
         let application = NSApplication.shared
         let delegate = ApplicationDelegate()
         application.delegate = delegate

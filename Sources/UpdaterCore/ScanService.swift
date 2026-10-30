@@ -1,8 +1,9 @@
 import Foundation
 
 public enum ScanService {
-    public static func scan(country: String = "US", ownApp: SoftwareSnapshot? = nil) async -> ScanResult {
-        let inventory = await Task.detached(priority: .utility) { Inventory.inspect() }.value
+    public static func scan(country: String = "US", ownApp: SoftwareSnapshot? = nil, knownAppPaths: [String] = []) async -> ScanResult {
+        let discovery = await ApplicationDiscovery.inspect(knownPaths: knownAppPaths)
+        let inventory = discovery.inventory
         let apps = inventory.apps
         var snapshots = apps.map(SoftwareSnapshot.init(app:)) + [SoftwareSnapshot.operatingSystem]
         if let ownApp { snapshots.append(ownApp) }
@@ -39,7 +40,7 @@ public enum ScanService {
         let (githubItems, githubReport) = await github
         let items = DiscoveryMerger.merge(apps: apps, homebrewCatalog: homebrewCatalogItems, appCatalog: appCatalogItems,
             managed: brewItems, repositories: githubItems, publisher: developer + electronItems, store: storeItems)
-        var reports = [systemReport, brewReport, ProviderReport("App Store", "\(storeItems.count) apps checked against the catalog"),
+        var reports = [discovery.report, systemReport, brewReport, ProviderReport("App Store", "\(storeItems.count) apps checked against the catalog"),
                        ProviderReport("Developer feeds", "\(developer.count) apps with published update feeds"),
                        homebrewCatalogReport, appCatalogReport, electronReport, githubReport]
         let mau = "/Library/Application Support/Microsoft/MAU2.0/Microsoft AutoUpdate.app"
