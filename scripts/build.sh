@@ -15,12 +15,13 @@ fi
 # macOS 14 includes Swift 5.9. Older compatibility shims are unnecessary,
 # including when a dependency declares an older deployment target. Some modern
 # arm64-only CLT installs no longer ship Intel copies of those legacy shims.
-build_args=(-c "$configuration" --product AnnoyingUpdater
+build_args=(-c "$configuration"
             -Xswiftc -runtime-compatibility-version -Xswiftc none)
 if [[ "$architecture" == "universal" ]]; then
     build_args+=(--arch arm64 --arch x86_64)
 fi
-swift build "${build_args[@]}"
+swift build "${build_args[@]}" --product AnnoyingUpdater
+swift build "${build_args[@]}" --product BrowserBridge
 binary_dir="$(swift build "${build_args[@]}" --show-bin-path)"
 mkdir -p build
 staging="$(mktemp -d "$PWD/build/bundle.XXXXXX")"
@@ -28,6 +29,9 @@ trap 'rm -rf "$staging"' EXIT
 app_path="$staging/Annoying Updater.app"
 mkdir -p "$app_path/Contents/MacOS" "$app_path/Contents/Resources" "$app_path/Contents/Frameworks"
 cp "$binary_dir/AnnoyingUpdater" "$app_path/Contents/MacOS/AnnoyingUpdater"
+cp "$binary_dir/BrowserBridge" "$app_path/Contents/MacOS/BrowserBridge"
+codesign --force --sign - "$app_path/Contents/MacOS/BrowserBridge"
+python3 scripts/package-companion.py "$app_path/Contents/Resources/BrowserCompanion"
 cp Resources/Info.plist "$app_path/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $version" "$app_path/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $version" "$app_path/Contents/Info.plist"
@@ -43,6 +47,8 @@ codesign --verify --deep --strict "$app_path"
 if [[ "$architecture" == "universal" ]]; then
     lipo "$app_path/Contents/MacOS/AnnoyingUpdater" -verify_arch arm64
     lipo "$app_path/Contents/MacOS/AnnoyingUpdater" -verify_arch x86_64
+    lipo "$app_path/Contents/MacOS/BrowserBridge" -verify_arch arm64
+    lipo "$app_path/Contents/MacOS/BrowserBridge" -verify_arch x86_64
 fi
 # Replace the previous output only after the new bundle passes verification.
 rm -rf "$PWD/build/Annoying Updater.app"

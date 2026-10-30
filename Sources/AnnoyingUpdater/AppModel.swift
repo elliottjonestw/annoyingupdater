@@ -28,6 +28,7 @@ final class AppModel: ObservableObject {
     @Published var messageIsError = false
     @Published var launchAtLogin = SMAppService.mainApp.status == .enabled
     @Published var loginNeedsApproval = false
+    @Published var browserMonitoring: Bool
     @Published var country: String
     @Published private(set) var appearance: AppAppearance
     @Published var now = Date()
@@ -49,11 +50,12 @@ final class AppModel: ObservableObject {
     private var discoveryRefresh: Task<Void, Never>?
     private var discoveryRefreshPending = false
     private var finderCheckPending = false
+    private var browserFingerprint = ""
     private var cacheURL: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("Annoying Updater/last-scan.json")
     }
-    var updates: [UpdateItem] { items.filter { $0.status == .available } }
+    var updates: [UpdateItem] { items.filter { $0.status == .available && (browserMonitoring || $0.kind != .browserExtension) } }
     var unsupported: [UpdateItem] { items.filter { $0.status == .unsupported } }
     var unverified: [UpdateItem] { items.filter { $0.status == .unverified } }
     var checkedCount: Int { items.filter { $0.status == .available || $0.status == .current }.count }
@@ -69,6 +71,7 @@ final class AppModel: ObservableObject {
         self.isDemo = isDemo
         defaults = isDemo ? UserDefaults(suiteName: "com.annoyingupdater.preview")! : .standard
         loginItems = LoginItemController(service: SystemLoginItemService(), defaults: defaults)
+        browserMonitoring = defaults.bool(forKey: "browserMonitoring")
         country = defaults.string(forKey: "storeCountry") ?? Locale.current.region?.identifier ?? "US"
         appearance = defaults.string(forKey: "appearance").flatMap(AppAppearance.init(rawValue:)) ?? .light
         if isDemo {
@@ -99,6 +102,7 @@ final class AppModel: ObservableObject {
     }
 
     func start() {
+        browserFingerprint = BrowserInventoryStore().fingerprint()
         configureDefaultLoginItem()
         heartbeat = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.tick() }
@@ -129,6 +133,10 @@ final class AppModel: ObservableObject {
 
     func tick() {
         now = Date(); statusDidChange?()
+        if browserMonitoring && !isDemo {
+            let fingerprint = BrowserInventoryStore().fingerprint(at: now)
+            if fingerprint != browserFingerprint { browserFingerprint = fingerprint; scheduleDiscoveryRefresh(); return }
+        }
         guard !isDemo || demoRemindersEnabled else { return }
         guard sessionAvailable, installingID == nil, !isChecking, !isClearingHistory else { return }
         if finderCheckPending { Task { await check() }; return }
@@ -152,7 +160,7 @@ final class AppModel: ObservableObject {
             hasCompletedScan = true; isChecking = false; statusDidChange?(); return
         }
         let knownPaths = items.filter { $0.kind == .application }.compactMap { $0.installationPath ?? $0.path } + (defaults.stringArray(forKey: "finderAppPaths") ?? [])
-        let result = await ScanService.scan(country: country, ownApp: SoftwareSnapshot.ownApp(at: Bundle.main.bundleURL), knownAppPaths: knownPaths)
+        let result = await ScanService.scan(country: country, ownApp: SoftwareSnapshot.ownApp(at: Bundle.main.bundleURL), knownAppPaths: knownPaths, browserMonitoring: browserMonitoring)
         if let observation = result.observation {
             lastObservation = observation
             if let historyStore {
@@ -163,13 +171,45 @@ final class AppModel: ObservableObject {
             }
         }
         let merged = result.preservingLastFindings(from: items)
-        items = merged.items; reports = result.reports; lastCheck = result.date
+        items = merged.items.filter { browserMonitoring || $0.kind != .browserExtension }; reports = result.reports; lastCheck = result.date
         lastReminderValidation = Date(); now = Date(); hasCompletedScan = true; isChecking = false
         saveCache(); statusDidChange?()
         if updates.isEmpty { hideReminder?() }
         tick()
         if finderCheckPending { Task { await check() } }
         else if discoveryRefreshPending { discoveryRefreshPending = false; scheduleDiscoveryRefresh() }
+    }
+
+    func setBrowserMonitoring(_ enabled: Bool) {
+        browserMonitoring = enabled; defaults.set(enabled, forKey: "browserMonitoring")
+        if !enabled {
+            items.removeAll { $0.kind == .browserExtension }
+            if updates.isEmpty { hideReminder?() }
+        }
+        browserFingerprint = BrowserInventoryStore().fingerprint(); scheduleDiscoveryRefresh()
+    }
+    func prepareBrowserCompanion(_ browser: BrowserFamily) throws {
+        let app = Bundle.main.bundleURL
+        let userApps = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications").path + "/"
+        guard app.path.hasPrefix("/Applications/") || app.path.hasPrefix(userApps) else {
+            throw CheckError.failed("Move Annoying Updater to Applications before preparing the browser bridge.")
+        }
+        let executable = app.appendingPathComponent("Contents/MacOS/BrowserBridge").path
+        guard FileManager.default.isExecutableFile(atPath: executable) else { throw CheckError.failed("The browser bridge is missing. Reinstall Annoying Updater.") }
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let directory = support.appendingPathComponent(browser.supportPath + "/NativeMessagingHosts")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try BrowserInventoryStore.hostManifest(browser: browser, executable: executable)
+            .write(to: directory.appendingPathComponent(BrowserInventoryStore.hostName + ".json"), options: .atomic)
+        setBrowserMonitoring(true)
+    }
+    func openBrowserExtensions(_ browser: BrowserFamily) {
+        guard let application = NSWorkspace.shared.urlForApplication(withBundleIdentifier: browser.bundleID) else {
+            showError("\(browser.title) isn't installed in a location macOS recognizes."); return
+        }
+        NSWorkspace.shared.open([browser.extensionsURL], withApplicationAt: application, configuration: NSWorkspace.OpenConfiguration()) { [weak self] _, error in
+            if let error { Task { @MainActor in self?.showError(error.localizedDescription) } }
+        }
     }
 
     func checkFinderApplications(_ paths: [String]) {
@@ -224,6 +264,8 @@ final class AppModel: ObservableObject {
             installingID = nil; statusDidChange?(); return
         }
         switch item.action {
+        case .browserExtensions(let family):
+            if let browser = BrowserFamily(rawValue: family) { openBrowserExtensions(browser); snooze() }
         case .systemSettings:
             open(URL(string: "x-apple.systempreferences:com.apple.Software-Update-Settings.extension")!)
             snooze()

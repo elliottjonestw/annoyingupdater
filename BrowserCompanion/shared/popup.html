@@ -1,0 +1,7 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Annoying Updater</title>
+<style>:root{color-scheme:light dark}body{font:13px system-ui;margin:18px;width:290px}h1{font-size:17px}label{display:block;margin:12px 0}input,select,button{font:inherit;box-sizing:border-box;width:100%;padding:7px;margin-top:5px}p{line-height:1.45}#status{min-height:36px}</style>
+<h1>Annoying Updater</h1><p>Share this profile's installed extension names, identifiers, and versions with the app on this Mac.</p>
+<label>Profile name<input id="label" maxlength="80" placeholder="Default profile"></label>
+<label id="browserLabel">Browser<select id="browser"><option value="chrome">Chrome</option><option value="brave">Brave</option><option value="chromium">Chromium</option><option value="firefox">Firefox</option></select></label>
+<button id="sync">Save and check connection</button><p id="status" role="status"></p>
+<p>No browsing history, tabs, cookies, passwords, or webpage access. The app checks public store metadata; your browser installs updates.</p><script src="bridge.js"></script><script src="popup.js"></script></html>

@@ -6,7 +6,8 @@ let package = Package(
     platforms: [.macOS(.v14)],
     products: [
         .executable(name: "AnnoyingUpdater", targets: ["AnnoyingUpdater"]),
-        .executable(name: "UpdaterProbe", targets: ["UpdaterProbe"])
+        .executable(name: "UpdaterProbe", targets: ["UpdaterProbe"]),
+        .executable(name: "BrowserBridge", targets: ["BrowserBridge"])
     ],
     dependencies: [
         .package(url: "https://github.com/jpsim/Yams.git", exact: "6.2.2"),
@@ -18,6 +19,7 @@ let package = Package(
         .executableTarget(name: "AnnoyingUpdater", dependencies: ["UpdaterCore", .product(name: "Sparkle", package: "Sparkle")],
                           linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]),
         .executableTarget(name: "UpdaterProbe", dependencies: ["UpdaterCore"]),
+        .executableTarget(name: "BrowserBridge", dependencies: ["UpdaterCore"]),
         .testTarget(name: "UpdaterCoreTests", dependencies: ["UpdaterCore"])
     ],
     swiftLanguageModes: [.v5]

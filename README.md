@@ -23,6 +23,8 @@ When an update is available, Annoying Updater brings a reminder to the front. Up
 - **Finds updates automatically.** Checks macOS, App Store apps, developer feeds, Homebrew, public app catalogs, and more. No per-app setup.
 - **Checks command-line tools too.** Monitors Homebrew formulae and global npm packages, including standard and nvm Node installations. Copy an update command to run in Terminal when you're ready.
 - **Finds portable apps.** Discovers apps in Downloads, running apps, and connected drives, using Spotlight where available. Locations are shown so you can identify each copy.
+- **Checks apps from Finder.** Select apps and choose **Services → Check with Annoying Updater** to see their results.
+- **Can watch browser extensions.** An optional companion connects Chromium and Firefox profiles and checks supported public store versions. [Preview setup and coverage](BrowserCompanion/README.md).
 - **Keeps everything in one place.** See available updates first, apps that need a manual check next, and up-to-date software last.
 - **Remembers what changed.** Local update history records installed version and build changes, including updates made outside Annoying Updater. Pending updates show when they were first detected.
 - **Helps you finish the job.** Installs supported Homebrew updates or takes you to the app, App Store, system updater, or developer's site.
@@ -37,6 +39,10 @@ History gives you a searchable timeline of installed version and build changes, 
 
 Tracking starts with your first scan. History stays on your Mac, and you can clear it at any time.
 
+## Check from Finder
+
+In Finder, select one or more apps and choose **Services → Check with Annoying Updater**. Install Annoying Updater in Applications first. If the service is hidden, enable it in System Settings → Keyboard → Keyboard Shortcuts → Services. Selected apps are checked with the same automatic sources and remain monitored when accessible.
+
 ## Install
 
 1. Download the latest `.dmg` from [Releases](https://github.com/elliottjonestw/annoyingupdater/releases/latest).
@@ -47,7 +53,7 @@ The app isn't Developer ID signed or notarized yet. If macOS blocks it, follow [
 
 ## Private by design
 
-No account. No Annoying Updater server. App matching happens on your Mac; your installed-app inventory isn't uploaded to the public app catalogs. Update checks contact Apple, the catalogs, and the relevant developers or GitHub.
+No account. No Annoying Updater server. App matching happens on your Mac; your installed-app inventory isn't uploaded to the public app catalogs. Update checks contact Apple, the catalogs, and the relevant developers or GitHub. If you connect the optional browser companion, extension checks send identifiers and, when needed, installed/browser versions to Google or Mozilla; browsing history, tabs, cookies, and passwords are never accessed.
 
 ## Build it yourself
 
@@ -58,8 +64,6 @@ scripts/build.sh
 open "build/Annoying Updater.app"
 ```
 
-Run `scripts/test.sh` for tests. To create a universal disk image, run `scripts/build.sh release universal`, then `scripts/package.sh`. The [release workflow](.github/workflows/release.yml) builds and publishes the version in `VERSION` when its matching tag (such as `v1.3`) is pushed.
+Run `scripts/test.sh` for Swift tests and `node --test BrowserCompanion/bridge.test.cjs` for companion tests. To create a universal disk image, run `scripts/build.sh release universal`, then `scripts/package.sh`. The [release workflow](.github/workflows/release.yml) builds and publishes the version in `VERSION` when its matching tag (such as `v1.3`) is pushed.
 
 All rights reserved. See [LICENSE](LICENSE). Third-party licenses are included in the app and in [ThirdPartyNotices.txt](Resources/ThirdPartyNotices.txt).
-
-In Finder, select one or more apps and choose **Services → Check with Annoying Updater**. Install Annoying Updater in Applications first. If the service is hidden, enable it in System Settings → Keyboard → Keyboard Shortcuts → Services. Selected apps are checked with the same automatic sources and remain monitored when accessible.

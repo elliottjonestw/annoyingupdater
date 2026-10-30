@@ -3,7 +3,7 @@ import Foundation
 public enum UpdateSource: String, Codable, CaseIterable, Sendable {
     case system = "macOS", appStore = "App Store", sparkle = "Developer", homebrew = "Homebrew", microsoft = "Microsoft", unknown = "Unrecognized"
     case homebrewCatalog = "Homebrew Catalog", appCatalog = "App Catalog", electron = "Electron", github = "GitHub"
-    case homebrewFormula = "Homebrew Tools", npm = "npm Tools"
+    case homebrewFormula = "Homebrew Tools", npm = "npm Tools", browserExtensions = "Browser Extensions"
 }
 
 public enum UpdateStatus: String, Codable, Sendable {
@@ -31,6 +31,7 @@ public enum UpdateAction: Codable, Equatable, Sendable {
     case microsoft(executable: String, appID: String)
     case none
     case copyCommand(String)
+    case browserExtensions(String)
 
     public var isDirect: Bool {
         switch self { case .homebrew, .microsoft: return true; default: return false }
@@ -42,6 +43,7 @@ public enum UpdateAction: Codable, Equatable, Sendable {
         case .openApp: return "Open App"
         case .website: return "Visit Developer"
         case .copyCommand: return "Copy Update Command"
+        case .browserExtensions: return "Open Browser Extensions"
         case .homebrew, .microsoft: return "Update"
         case .none: return "Unavailable"
         }
@@ -123,7 +125,7 @@ public struct ScanResult: Codable, Sendable {
     public func preservingLastFindings(from previous: [UpdateItem]) -> ScanResult {
         var merged = self
         // A failed manager must not make previously observed tools silently disappear.
-        for old in previous where old.kind == .commandLineTool && !items.contains(where: { $0.id == old.id }) {
+        for old in previous where (old.kind == .commandLineTool || (old.kind == .browserExtension && reports.contains { $0.name == "Browser Extensions" && $0.hasError })) && !items.contains(where: { $0.id == old.id }) {
             guard let path = old.path, observation?.uncertainPaths.contains(where: { path == $0 || path.hasPrefix($0 + "/") }) == true else { continue }
             var item = old; item.status = .unverified
             item.detail = "\(old.source.rawValue) couldn't be checked. Showing the last observed version."

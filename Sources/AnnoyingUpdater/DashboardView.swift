@@ -160,11 +160,13 @@ struct DashboardView: View {
             }
             if !updates.isEmpty {
                 let system = updates.filter { $0.source == .system }
-                let apps = updates.filter { $0.source != .system && $0.kind != .commandLineTool }
+                let apps = updates.filter { $0.source != .system && $0.kind != .commandLineTool && $0.kind != .browserExtension }
                 let tools = updates.filter { $0.kind == .commandLineTool }
+                let extensions = updates.filter { $0.kind == .browserExtension }
                 if !system.isEmpty { itemGroup("System Software", items: system) }
                 if !apps.isEmpty { itemGroup("Application Updates", items: apps) }
                 if !tools.isEmpty { itemGroup("Command-Line Tools", items: tools) }
+                if !extensions.isEmpty { itemGroup("Browser Extensions", items: extensions) }
                 HStack(alignment: .top, spacing: 7) {
                     Image(systemName: "clock.arrow.circlepath")
                     Text("You'll be reminded every 15 minutes until these updates are installed. Apps with their own updater will open so you can finish there.")
@@ -236,7 +238,9 @@ struct AppIconView: View {
     var size: CGFloat = 40
     var body: some View {
         Group {
-            if item.kind == .commandLineTool {
+            if item.kind == .browserExtension {
+                Image(systemName: "puzzlepiece.extension").font(.system(size: size * 0.65)).foregroundStyle(.secondary).frame(width: size, height: size)
+            } else if item.kind == .commandLineTool {
                 Image(systemName: "terminal").font(.system(size: size * 0.65)).foregroundStyle(.secondary).frame(width: size, height: size)
             } else if item.source == .system && item.path == nil {
                 Image(systemName: "laptopcomputer").font(.system(size: size * 0.65, weight: .regular))

@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var model: AppModel
     @ObservedObject var selfUpdater: SelfUpdater
+    @StateObject private var browserSetup = BrowserSetupState()
     var body: some View {
         Form {
             Section {
@@ -33,6 +34,12 @@ struct SettingsView: View {
                 Text("Choose the region used by your App Store account. Catalog availability can vary by region. Changes apply to the next check.")
             }
             Section {
+                Toggle("Monitor browser extensions", isOn: Binding(get: { model.browserMonitoring }, set: { model.setBrowserMonitoring($0) }))
+                Button("Set Up Browser Companion…") { browserSetup.isPresented = true }
+            } header: { Text("Browser Extensions") } footer: {
+                Text("Optional companion for Chromium browsers and Firefox. Extension identifiers and versions are checked with Google or Mozilla; browsing data stays private. Closed profiles show their last inventory as unverified.")
+            }
+            Section {
                 LabeledContent("Version", value: AppVersion.display)
                 Toggle("Install Annoying Updater updates automatically", isOn: Binding(
                     get: { selfUpdater.automaticallyInstalls }, set: { selfUpdater.setAutomaticallyInstalls($0) }))
@@ -48,6 +55,7 @@ struct SettingsView: View {
         }
         .formStyle(.grouped).frame(width: 490, height: 560)
         .onAppear { model.refreshLoginItemStatus() }
+        .sheet(isPresented: $browserSetup.isPresented) { BrowserSetupView(model: model, setup: browserSetup) }
     }
     private func countryName(_ code: String) -> String { Locale.current.localizedString(forRegionCode: code) ?? code }
 }

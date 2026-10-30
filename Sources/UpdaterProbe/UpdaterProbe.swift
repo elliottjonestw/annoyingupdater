@@ -18,6 +18,15 @@ enum UpdaterProbe {
             let name = CommandLine.arguments[index + 1]
             let result: ([UpdateItem], ProviderReport)
             switch name {
+            case "browser":
+                let store: BrowserInventoryStore
+                if let flag = CommandLine.arguments.firstIndex(of: "--browser-inventory-directory"), CommandLine.arguments.indices.contains(flag + 1) {
+                    store = BrowserInventoryStore(directory: URL(fileURLWithPath: CommandLine.arguments[flag + 1]))
+                } else { store = BrowserInventoryStore() }
+                let browser = await BrowserExtensionProvider.check(enabled: true, store: store)
+                FileHandle.standardOutput.write(try encoder.encode(ScanResult(items: browser.items, reports: [browser.report],
+                    observation: HistoryObservation(software: browser.snapshots, uncertainPaths: browser.uncertainPaths))))
+                return
             case "tools":
                 let tools = await CommandLineTools.check()
                 FileHandle.standardOutput.write(try encoder.encode(ScanResult(items: tools.items, reports: tools.reports,

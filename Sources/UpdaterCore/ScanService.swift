@@ -1,13 +1,14 @@
 import Foundation
 
 public enum ScanService {
-    public static func scan(country: String = "US", ownApp: SoftwareSnapshot? = nil, knownAppPaths: [String] = []) async -> ScanResult {
+    public static func scan(country: String = "US", ownApp: SoftwareSnapshot? = nil, knownAppPaths: [String] = [], browserMonitoring: Bool = false) async -> ScanResult {
         let discovery = await ApplicationDiscovery.inspect(knownPaths: knownAppPaths)
         let inventory = discovery.inventory
         let apps = inventory.apps
         var snapshots = apps.map(SoftwareSnapshot.init(app:)) + [SoftwareSnapshot.operatingSystem]
         if let ownApp { snapshots.append(ownApp) }
         var observation = HistoryObservation(software: snapshots, uncertainPaths: inventory.uncertainPaths)
+        async let browser = BrowserExtensionProvider.check(enabled: browserMonitoring)
         async let system = SystemProvider.check()
         async let managed = managedSoftware(apps)
         async let store = AppStoreProvider.check(apps.filter(\.isAppStore), country: country)
@@ -48,7 +49,11 @@ public enum ScanService {
         // MAU's listing schema and external Sparkle installation need a real-device
         // feasibility pass. Do not fabricate support or execute unverified installers.
         reports += tools.reports
-        return ScanResult(items: systemItems + items + tools.items, reports: reports, observation: observation)
+        let browserResult = await browser
+        reports.append(browserResult.report)
+        observation.software += browserResult.snapshots
+        observation.uncertainPaths += browserResult.uncertainPaths
+        return ScanResult(items: systemItems + items + tools.items + browserResult.items, reports: reports, observation: observation)
     }
     private static func managedSoftware(_ apps: [InstalledApp]) async -> (ToolCheck, [UpdateItem], ProviderReport) {
         let tools = await CommandLineTools.check()
