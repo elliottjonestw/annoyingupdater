@@ -66,11 +66,12 @@ public struct UpdateItem: Identifiable, Codable, Equatable, Sendable {
     public var softwareKind: SoftwareKind?
     public var installationPath: String?
     public var releaseNotes: ReleaseNotesContext?
+    public var updateAgeEvidence: UpdateAgeEvidence?
     public var kind: SoftwareKind { softwareKind ?? (source == .system ? .macOS : .application) }
 
     public init(id: String, name: String, bundleID: String = "", path: String? = nil, installedVersion: String,
                 availableVersion: String? = nil, source: UpdateSource, status: UpdateStatus, action: UpdateAction = .none,
-                detail: String = "", checkedAt: Date? = nil, verificationIssue: VerificationIssue? = nil, softwareKind: SoftwareKind? = nil, installationPath: String? = nil, releaseNotes: ReleaseNotesContext? = nil) {
+                detail: String = "", checkedAt: Date? = nil, verificationIssue: VerificationIssue? = nil, softwareKind: SoftwareKind? = nil, installationPath: String? = nil, releaseNotes: ReleaseNotesContext? = nil, updateAgeEvidence: UpdateAgeEvidence? = nil) {
         self.id = id; self.name = name; self.bundleID = bundleID; self.path = path
         self.installedVersion = installedVersion; self.availableVersion = availableVersion
         self.source = source; self.status = status; self.action = action; self.detail = detail; self.checkedAt = checkedAt
@@ -78,6 +79,7 @@ public struct UpdateItem: Identifiable, Codable, Equatable, Sendable {
         self.softwareKind = softwareKind
         self.installationPath = installationPath
         self.releaseNotes = releaseNotes
+        self.updateAgeEvidence = updateAgeEvidence
     }
 }
 
@@ -167,6 +169,15 @@ public struct ScanResult: Codable, Sendable {
                     item.detail = failure + " Last detected update: \(old.availableVersion ?? "unknown")."
                     return item
                 }, at: 0)
+            }
+        }
+        for index in merged.items.indices {
+            let item = merged.items[index]
+            guard item.status == .available || item.status == .unverified, let old = previous.first(where: { $0.id == item.id }),
+                  let evidence = old.updateAgeEvidence, evidence.matchesInstallation(item, at: date),
+                  item.status == .unverified || evidence.applies(to: item, at: date) else { continue }
+            if item.updateAgeEvidence == nil || evidence.date < item.updateAgeEvidence!.date {
+                merged.items[index].updateAgeEvidence = evidence
             }
         }
         return merged

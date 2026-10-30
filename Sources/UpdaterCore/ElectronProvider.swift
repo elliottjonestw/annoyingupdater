@@ -24,6 +24,7 @@ private struct ElectronManifest: Decodable {
     var path: String?
     var minimumSystemVersion: String?
     var stagingPercentage: Double?
+    var releaseDate: String?
 }
 
 public enum ElectronProvider {
@@ -100,6 +101,9 @@ public enum ElectronProvider {
         item.availableVersion = item.status == .available ? manifest.version : nil
         item.checkedAt = checkedAt
         item.releaseNotes?.prepend(ReleaseNotesSource(.electron, url: feed))
+        if let date = manifest.releaseDate.flatMap(UpdateAge.publicationDate) {
+            item.updateAgeEvidence = UpdateAgeEvidence.earliest([ReleaseNote(version: manifest.version, date: date)], source: ReleaseNotesSource(.electron, url: feed), item: item)
+        }
         item.detail = item.status == .unverified ? "The publisher's version format couldn't be compared reliably. Check in the app."
             : "Checked the update feed discovered inside this app. Open the app to finish updating."
         return item

@@ -16,6 +16,10 @@ enum UpdaterProbe {
             } else { cache = .shared }
             let result = try await ReleaseNotesService.load(ReleaseNotesRequest(item: item), cache: cache)
             FileHandle.standardOutput.write(try encoder.encode(result))
+        } else if let flag = CommandLine.arguments.firstIndex(of: "--update-age"), CommandLine.arguments.indices.contains(flag + 1) {
+            var item = try JSONDecoder().decode(UpdateItem.self, from: ElectronProvider.boundedFile(URL(fileURLWithPath: CommandLine.arguments[flag + 1]), maxBytes: 512 * 1024))
+            if let evidence = await UpdateAge.refine(item) { item.updateAgeEvidence = evidence }
+            FileHandle.standardOutput.write(try encoder.encode(item))
         } else if CommandLine.arguments.contains("--inventory") {
             let items = Inventory.discover().map(\.item)
             FileHandle.standardOutput.write(try encoder.encode(items))

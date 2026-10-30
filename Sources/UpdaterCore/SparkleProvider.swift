@@ -84,6 +84,10 @@ public enum SparkleProvider {
             item.detail = available ? "The developer lists a newer compatible release. Open the app and choose Check for Updates to install."
                 : "Checked the developer's published update feed."
             item.checkedAt = Date()
+            if let source = item.releaseNotes?.sources.first(where: { $0.kind == .sparkle }),
+               let history = try? ReleaseNotesService.parseSparkle(data, request: ReleaseNotesRequest(item: item), source: source) {
+                item.updateAgeEvidence = UpdateAgeEvidence.earliest(history.entries, source: source, item: item)
+            }
         } catch { item.status = .unverified; item.detail = error.localizedDescription }
         return item
     }

@@ -16,9 +16,10 @@ private final class NotesAppcastParser: NSObject, XMLParserDelegate {
         guard stack.count < 32 else { parser.abortParsing(); return }
         stack.append(name); buffers.append("")
         if name == "item" { item = NotesAppcastItem() }
-        if name == "enclosure", stack.dropLast().last == "item" {
-            item?.build = attributes["sparkle:version"] ?? item?.build ?? ""
-            item?.version = attributes["sparkle:shortVersionString"] ?? item?.version ?? ""
+        if name == "enclosure", stack.dropLast().last == "item", var current = item {
+            current.build = attributes["sparkle:version"] ?? current.build
+            current.version = attributes["sparkle:shortVersionString"] ?? current.version
+            item = current
         }
         if name == "sparkle:releaseNotesLink" { language = attributes["xml:lang"] ?? "" }
     }

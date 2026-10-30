@@ -281,6 +281,11 @@ struct UpdateRow: View {
                                 .buttonStyle(.link).font(.system(size: 11)).accessibilityLabel("What's New in \(item.name)")
                         }
                     }.font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
+                    if let age = model.updateAge(for: item) {
+                        Label(age.label(at: model.now), systemImage: "clock")
+                            .font(.system(size: 11)).foregroundStyle(.secondary)
+                            .help(age.explanation)
+                    }
                 }
                 Spacer(minLength: 4)
                 if model.installingID == item.id {
@@ -305,6 +310,12 @@ struct UpdateRow: View {
                         Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)]) }
                             .font(.system(size: 12))
                     }
+                    if let age = model.updateAge(for: item) {
+                        Text(age.explanation).font(.system(size: 11)).foregroundStyle(.secondary)
+                        if let publisher = age.evidence?.publisherURL {
+                            Link("Publication source", destination: publisher).font(.system(size: 11))
+                        }
+                    }
                     if let firstSeen = model.firstDetectedDate(for: item) {
                         Text("First detected \(firstSeen.formatted(date: .abbreviated, time: .shortened))")
                             .font(.system(size: 11)).foregroundStyle(.secondary)
@@ -317,7 +328,11 @@ struct UpdateRow: View {
             }
         }
         .task(id: ReleaseNotesRequest(item: item).id + String(model.lastCheck?.timeIntervalSinceReferenceDate ?? 0)) {
-            if item.availableVersion != nil { await model.prepareReleaseNotes(ReleaseNotesRequest(item: item)) }
+            if item.availableVersion != nil {
+                async let notes: Void = model.prepareReleaseNotes(ReleaseNotesRequest(item: item))
+                async let age: Void = model.prepareUpdateAge(item)
+                _ = await (notes, age)
+            }
         }
     }
     private var statusSymbol: String {

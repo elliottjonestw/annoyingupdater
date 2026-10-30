@@ -27,6 +27,7 @@ When an update is available, Annoying Updater brings a reminder to the front. Up
 - **Can watch browser extensions.** An optional companion connects Chromium and Firefox profiles and checks supported public store versions. [Preview setup and coverage](BrowserCompanion/README.md).
 - **Keeps everything in one place.** See available updates first, apps that need a manual check next, and up-to-date software last.
 - **Shows what an update changes.** When published notes are available, **What’s New** shows releases between your installed version and the selected update, newest first. Read just the target release, load older history, or open the original notes. Missing history and sources that provide only the latest notes are clearly labelled.
+- **Shows how long updates have been waiting.** Uses the earliest newer dated publisher release it can find, labelled “Outdated for at least …”. When publication dates aren’t available, “Detected … ago” uses local tracking instead. Dates and sources are explained in the update’s details.
 - **Remembers what changed.** Local update history records installed version and build changes, including updates made outside Annoying Updater. Pending updates show when they were first detected.
 - **Helps you finish the job.** Installs supported Homebrew updates or takes you to the app, App Store, system updater, or developer's site.
 - **Starts with your Mac.** Open at login is on by default. Close the window and it keeps watch from the menu bar.

@@ -41,6 +41,10 @@ public enum AppStoreProvider {
                     items[index].availableVersion = available ? version : nil
                     items[index].detail = "Compared with Apple's catalog for \(country.uppercased()). Catalog data can lag behind the App Store."
                     items[index].checkedAt = Date()
+                    if let source = items[index].releaseNotes?.sources.first(where: { $0.kind == .appStore }),
+                       let date = (result["currentVersionReleaseDate"] as? String).flatMap(UpdateAge.publicationDate) {
+                        items[index].updateAgeEvidence = UpdateAgeEvidence.earliest([ReleaseNote(version: version, date: date)], source: source, item: items[index])
+                    }
                 }
             } catch {
                 for id in batch { if let index = ids[id] { items[index].detail = error.localizedDescription } }

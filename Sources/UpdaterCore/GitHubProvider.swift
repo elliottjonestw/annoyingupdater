@@ -112,6 +112,10 @@ public enum GitHubProvider {
         item.status = ReleaseVersions.status(candidate: version, installed: app.version, build: app.build)
         item.availableVersion = item.status == .available ? ReleaseVersions.numeric(version) : nil
         item.checkedAt = checkedAt
+        if let source = item.releaseNotes?.sources.first(where: { $0.kind == .github }),
+           let date = (release["published_at"] as? String).flatMap(UpdateAge.publicationDate) {
+            item.updateAgeEvidence = UpdateAgeEvidence.earliest([ReleaseNote(version: version, date: date)], source: source, item: item)
+        }
         item.detail = item.status == .unverified ? "The repository's version format couldn't be compared reliably."
             : "Checked stable releases in the repository declared by this app, with a matching Mac download."
         return item

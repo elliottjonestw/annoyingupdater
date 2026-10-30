@@ -137,13 +137,13 @@ public enum NotesText {
 public enum ReleaseNotesService {
     public static func hasPublishedNotes(_ request: ReleaseNotesRequest, cache: MetadataCache = .shared) async throws -> Bool {
         guard request.context.sources.contains(where: { $0.kind != .website }) else { return false }
-        await NotesAvailabilityGate.shared.acquire()
+        await PublisherLookupGate.shared.acquire()
         do {
             let found = try await findPublishedNotes(request, cache: cache)
-            await NotesAvailabilityGate.shared.release()
+            await PublisherLookupGate.shared.release()
             return found
         } catch {
-            await NotesAvailabilityGate.shared.release()
+            await PublisherLookupGate.shared.release()
             throw error
         }
     }
@@ -322,8 +322,8 @@ private struct NotesElectronManifest: Decodable {
     enum CodingKeys: String, CodingKey { case version; case notes = "releaseNotes" }
 }
 
-private actor NotesAvailabilityGate {
-    static let shared = NotesAvailabilityGate()
+actor PublisherLookupGate {
+    static let shared = PublisherLookupGate()
     private var active = 0
     private var waiting: [CheckedContinuation<Void, Never>] = []
     func acquire() async {

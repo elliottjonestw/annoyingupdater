@@ -9,6 +9,7 @@ final class AppModel: ObservableObject {
     @Published var releaseNotesRequest: ReleaseNotesRequest?
     @Published private var releaseNotesAvailability: [String: Bool] = [:]
     private var checkingNotes: Set<String> = []
+    private var checkingAges: Set<String> = []
     @Published var search = ""
     @Published var finderSelectedPaths: Set<String> = []
     @Published var historySearch = ""
@@ -190,6 +191,24 @@ final class AppModel: ObservableObject {
         defer { checkingNotes.remove(request.id) }
         if isDemo { releaseNotesAvailability[request.id] = true; return }
         releaseNotesAvailability[request.id] = (try? await ReleaseNotesService.hasPublishedNotes(request)) ?? false
+    }
+
+    func updateAge(for item: UpdateItem) -> UpdateAgeIndicator? {
+        let snapshot = lastObservation?.software.first { $0.id == item.id || (item.path != nil && $0.resolvedPath == item.path) || (item.kind == .macOS && $0.id == "system:macos") }
+        let detected = UpdateAge.detectionDate(for: item, offers: firstDetected, entries: historyEntries, snapshot: snapshot)
+        return UpdateAge.indicator(for: item, detectedAt: detected, at: now)
+    }
+    func prepareUpdateAge(_ item: UpdateItem) async {
+        let requestID = ReleaseNotesRequest(item: item).id
+        guard !isDemo, item.status == .available, !checkingAges.contains(requestID) else { return }
+        checkingAges.insert(requestID)
+        defer { checkingAges.remove(requestID) }
+        guard let evidence = await UpdateAge.refine(item),
+              let index = items.firstIndex(where: { $0.id == item.id }), items[index].status == .available,
+              ReleaseNotesRequest(item: items[index]).id == requestID, evidence.applies(to: items[index], at: Date()) else { return }
+        if let current = items[index].updateAgeEvidence, current.date <= evidence.date { return }
+        items[index].updateAgeEvidence = evidence
+        saveCache()
     }
 
     func setBrowserMonitoring(_ enabled: Bool) {
