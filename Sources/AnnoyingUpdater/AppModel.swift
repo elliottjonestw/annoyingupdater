@@ -7,6 +7,11 @@ import UpdaterCore
 final class AppModel: ObservableObject {
     @Published var selection: SidebarPage? = .updates
     @Published var releaseNotesRequest: ReleaseNotesRequest?
+    @Published var vulnerabilityItem: UpdateItem?
+    @Published private(set) var vulnerabilityChecksEnabled: Bool
+    @Published private(set) var isCheckingVulnerabilities = false
+    private var vulnerabilityTask: Task<Void, Never>?
+    private var vulnerabilityGeneration = UUID()
     @Published private var releaseNotesAvailability: [String: Bool] = [:]
     private var checkingNotes: Set<String> = []
     private var checkingAges: Set<String> = []
@@ -76,6 +81,7 @@ final class AppModel: ObservableObject {
         defaults = isDemo ? UserDefaults(suiteName: "com.annoyingupdater.preview")! : .standard
         loginItems = LoginItemController(service: SystemLoginItemService(), defaults: defaults)
         browserMonitoring = defaults.bool(forKey: "browserMonitoring")
+        vulnerabilityChecksEnabled = defaults.object(forKey: "vulnerabilityChecksEnabled") as? Bool ?? true
         country = defaults.string(forKey: "storeCountry") ?? Locale.current.region?.identifier ?? "US"
         appearance = defaults.string(forKey: "appearance").flatMap(AppAppearance.init(rawValue:)) ?? .light
         if isDemo {
@@ -103,6 +109,7 @@ final class AppModel: ObservableObject {
                 lastCheck = cache.date; reports = cache.reports
             }
         }
+        now = Date()
     }
 
     func start() {
@@ -157,6 +164,7 @@ final class AppModel: ObservableObject {
 
     func check() async {
         guard !isChecking, installingID == nil, !isClearingHistory else { return }
+        vulnerabilityTask?.cancel(); vulnerabilityGeneration = UUID(); isCheckingVulnerabilities = false
         isChecking = true; finderCheckPending = false; statusDidChange?()
         if isDemo {
             try? await Task.sleep(for: .milliseconds(700))
@@ -177,7 +185,7 @@ final class AppModel: ObservableObject {
         let merged = result.preservingLastFindings(from: items)
         items = merged.items.filter { browserMonitoring || $0.kind != .browserExtension }; reports = result.reports; lastCheck = result.date
         lastReminderValidation = Date(); now = Date(); hasCompletedScan = true; isChecking = false
-        saveCache(); statusDidChange?()
+        saveCache(); statusDidChange?(); startVulnerabilityChecks()
         if updates.isEmpty { hideReminder?() }
         tick()
         if finderCheckPending { Task { await check() } }
@@ -209,6 +217,57 @@ final class AppModel: ObservableObject {
         if let current = items[index].updateAgeEvidence, current.date <= evidence.date { return }
         items[index].updateAgeEvidence = evidence
         saveCache()
+    }
+
+    func vulnerabilityAssessment(for item: UpdateItem) -> VulnerabilityAssessment? {
+        guard vulnerabilityChecksEnabled, let assessment = item.vulnerabilities,
+              assessment.requestID == VulnerabilityRequest(item: item).id else { return nil }
+        return assessment
+    }
+    func setVulnerabilityChecks(_ enabled: Bool) {
+        vulnerabilityChecksEnabled = enabled; defaults.set(enabled, forKey: "vulnerabilityChecksEnabled")
+        vulnerabilityTask?.cancel(); vulnerabilityGeneration = UUID(); isCheckingVulnerabilities = false
+        let generation = vulnerabilityGeneration
+        Task { [weak self] in
+            guard let self, self.vulnerabilityGeneration == generation else { return }
+            await VulnerabilityService.cache.cancelPending()
+            guard self.vulnerabilityGeneration == generation else { return }
+            if self.vulnerabilityChecksEnabled { self.startVulnerabilityChecks() }
+        }
+    }
+    private func startVulnerabilityChecks() {
+        guard vulnerabilityChecksEnabled, !isDemo, !isChecking else { return }
+        vulnerabilityTask?.cancel()
+        let generation = UUID(); vulnerabilityGeneration = generation
+        let candidates = items.filter { item in
+            VulnerabilityRequest(item: item).canCheck
+                && (item.vulnerabilities?.requestID != VulnerabilityRequest(item: item).id || item.vulnerabilities?.needsRefresh(at: Date()) != false)
+        }.sorted {
+            if ($0.status == .available) != ($1.status == .available) { return $0.status == .available }
+            return $0.name.localizedStandardCompare($1.name) == .orderedAscending
+        }
+        guard !candidates.isEmpty else { isCheckingVulnerabilities = false; return }
+        isCheckingVulnerabilities = true
+        vulnerabilityTask = Task { [weak self] in
+            guard let self else { return }
+            defer { if self.vulnerabilityGeneration == generation { self.isCheckingVulnerabilities = false } }
+            for item in candidates {
+                guard !Task.isCancelled, self.vulnerabilityChecksEnabled, self.vulnerabilityGeneration == generation else { return }
+                let request = VulnerabilityRequest(item: item)
+                var assessment = await VulnerabilityService.check(request)
+                guard !Task.isCancelled, self.vulnerabilityGeneration == generation,
+                      let index = self.items.firstIndex(where: { $0.id == item.id }),
+                      VulnerabilityRequest(item: self.items[index]).id == request.id else { continue }
+                // Retain an older positive finding on failure, explicitly stale in the UI.
+                if assessment.failureReason != nil, let previous = self.items[index].vulnerabilities, previous.requestID == request.id, !previous.findings.isEmpty {
+                    assessment.findings = VulnerabilityService.deduplicate(assessment.findings + previous.findings)
+                    assessment.checkedAt = min(assessment.checkedAt, previous.checkedAt)
+                }
+                self.now = Date()
+                self.items[index].vulnerabilities = assessment
+                self.saveCache()
+            }
+        }
     }
 
     func setBrowserMonitoring(_ enabled: Bool) {

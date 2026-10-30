@@ -31,7 +31,8 @@ public actor MetadataCache {
     private let directory: URL
     private let loader: Loader
     private var memory: [URL: MetadataSnapshot] = [:]
-    private var pending: [URL: Task<Data, Error>] = [:]
+    private struct Pending { let id = UUID(); let task: Task<Data, Error> }
+    private var pending: [URL: Pending] = [:]
     private var failures: [URL: (Date, String)] = [:]
 
     public init(directory: URL = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
@@ -52,13 +53,18 @@ public actor MetadataCache {
             memory[url] = cached; return cached
         }
         if let (retry, message) = failures[url], retry > now { throw CheckError.failed(message) }
-        let task: Task<Data, Error>
-        if let existing = pending[url] { task = existing }
-        else { task = Task { try await loader(url, maxBytes) }; pending[url] = task }
-        defer { pending[url] = nil }
+        let request: Pending
+        if let existing = pending[url] { request = existing }
+        else { request = Pending(task: Task { try await loader(url, maxBytes) }); pending[url] = request }
+        defer { if pending[url]?.id == request.id { pending[url] = nil } }
         let data: Data
-        do { data = try await task.value }
-        catch { failures[url] = (now.addingTimeInterval(300), error.localizedDescription); throw error }
+        do { data = try await request.task.value; try Task.checkCancellation() }
+        catch {
+            if !(error is CancellationError), (error as? URLError)?.code != .cancelled, !Task.isCancelled {
+                failures[url] = (now.addingTimeInterval(300), error.localizedDescription)
+            }
+            throw error
+        }
         guard data.count <= maxBytes else { throw CheckError.invalidResponse }
         let entry = MetadataSnapshot(data: data, fetchedAt: now)
         memory[url] = entry
@@ -67,6 +73,14 @@ public actor MetadataCache {
             try? encoded.write(to: file, options: .atomic)
         }
         return entry
+    }
+
+    /// Used by the dedicated advisory cache when its privacy toggle is turned off.
+    /// Update and release-note caches are separate and remain untouched.
+    public func cancelPending() {
+        let requests = pending.values.map(\.task)
+        pending.removeAll()
+        for request in requests { request.cancel() }
     }
 
     public static func isFresh(_ entry: MetadataSnapshot, ttl: TimeInterval, at date: Date) -> Bool {

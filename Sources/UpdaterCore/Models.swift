@@ -67,11 +67,13 @@ public struct UpdateItem: Identifiable, Codable, Equatable, Sendable {
     public var installationPath: String?
     public var releaseNotes: ReleaseNotesContext?
     public var updateAgeEvidence: UpdateAgeEvidence?
+    public var vulnerabilityPackage: VulnerabilityPackage?
+    public var vulnerabilities: VulnerabilityAssessment?
     public var kind: SoftwareKind { softwareKind ?? (source == .system ? .macOS : .application) }
 
     public init(id: String, name: String, bundleID: String = "", path: String? = nil, installedVersion: String,
                 availableVersion: String? = nil, source: UpdateSource, status: UpdateStatus, action: UpdateAction = .none,
-                detail: String = "", checkedAt: Date? = nil, verificationIssue: VerificationIssue? = nil, softwareKind: SoftwareKind? = nil, installationPath: String? = nil, releaseNotes: ReleaseNotesContext? = nil, updateAgeEvidence: UpdateAgeEvidence? = nil) {
+                detail: String = "", checkedAt: Date? = nil, verificationIssue: VerificationIssue? = nil, softwareKind: SoftwareKind? = nil, installationPath: String? = nil, releaseNotes: ReleaseNotesContext? = nil, updateAgeEvidence: UpdateAgeEvidence? = nil, vulnerabilityPackage: VulnerabilityPackage? = nil, vulnerabilities: VulnerabilityAssessment? = nil) {
         self.id = id; self.name = name; self.bundleID = bundleID; self.path = path
         self.installedVersion = installedVersion; self.availableVersion = availableVersion
         self.source = source; self.status = status; self.action = action; self.detail = detail; self.checkedAt = checkedAt
@@ -80,6 +82,8 @@ public struct UpdateItem: Identifiable, Codable, Equatable, Sendable {
         self.installationPath = installationPath
         self.releaseNotes = releaseNotes
         self.updateAgeEvidence = updateAgeEvidence
+        self.vulnerabilityPackage = vulnerabilityPackage
+        self.vulnerabilities = vulnerabilities
     }
 }
 
@@ -179,6 +183,11 @@ public struct ScanResult: Codable, Sendable {
             if item.updateAgeEvidence == nil || evidence.date < item.updateAgeEvidence!.date {
                 merged.items[index].updateAgeEvidence = evidence
             }
+        }
+        for index in merged.items.indices {
+            let item = merged.items[index]
+            if let old = previous.first(where: { $0.id == item.id })?.vulnerabilities,
+               old.requestID == VulnerabilityRequest(item: item).id { merged.items[index].vulnerabilities = old }
         }
         return merged
     }

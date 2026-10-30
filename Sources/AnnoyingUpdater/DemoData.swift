@@ -20,6 +20,10 @@ enum DemoData {
         let source = ReleaseNotesSource(.sparkle, url: URL(string: "https://example.com/signal/appcast.xml")!)
         items[2].releaseNotes = ReleaseNotesContext(sources: [source])
         items[2].updateAgeEvidence = UpdateAgeEvidence(date: Date().addingTimeInterval(-12 * 86400), version: "7.67.1", source: source, item: items[2])
+        items[2].vulnerabilities = VulnerabilityAssessment(requestID: VulnerabilityRequest(item: items[2]).id,
+            findings: [VulnerabilityFinding(id: "Sample advisory", summary: "Preview only: a sample security issue affecting the installed version. These aren't actual findings for Signal.", source: "NVD", url: URL(string: "https://nvd.nist.gov/")!, severity: "High", score: 8.1, affectedRange: "Before 7.68", fixedVersions: ["7.68"], targetMatch: .notAffected, knownExploited: true)],
+            complete: true, message: "Preview only. These are sample advisories, not a security assessment of your Mac.", identity: "Sample product")
+        items[1].vulnerabilities = VulnerabilityAssessment(requestID: VulnerabilityRequest(item: items[1]).id, complete: false, message: "A reliable product identity couldn't be established automatically.")
         return items
     }()
     static var history: [UpdateHistoryEntry] {

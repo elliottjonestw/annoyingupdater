@@ -40,6 +40,11 @@ struct SettingsView: View {
                 Text("Optional companion for Chromium browsers and Firefox. Extension identifiers and versions are checked with Google or Mozilla; browsing data stays private. Closed profiles show their last inventory as unverified.")
             }
             Section {
+                Toggle("Check for known vulnerabilities", isOn: Binding(get: { model.vulnerabilityChecksEnabled }, set: { model.setVulnerabilityChecks($0) }))
+            } header: { Text("Vulnerabilities") } footer: {
+                Text("Product names and versions are checked with NVD; verified public npm names and versions are checked with OSV. CISA adds known-exploitation information. Paths, usernames, and private-registry package names aren't sent. Results refresh daily in the background; coverage varies.")
+            }
+            Section {
                 LabeledContent("Version", value: AppVersion.display)
                 Toggle("Install Annoying Updater updates automatically", isOn: Binding(
                     get: { selfUpdater.automaticallyInstalls }, set: { selfUpdater.setAutomaticallyInstalls($0) }))

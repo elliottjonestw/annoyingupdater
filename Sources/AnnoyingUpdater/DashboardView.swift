@@ -105,6 +105,7 @@ struct DashboardView: View {
         }
         .frame(minWidth: 790, minHeight: 540)
         .sheet(item: $model.releaseNotesRequest) { ReleaseNotesView(request: $0, demo: model.isDemo) }
+        .sheet(item: $model.vulnerabilityItem) { VulnerabilityDetailsView(itemID: $0.id, model: model) }
     }
 
     private var updatesPage: some View {
@@ -228,6 +229,14 @@ struct DashboardView: View {
                     if model.reports.isEmpty { Text("Sources will appear after the first check.").foregroundStyle(.secondary).padding(20) }
                 }.frame(maxWidth: .infinity, alignment: .leading)
             }
+            GroupBox {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("Vulnerability Checks", systemImage: "shield.lefthalf.filled").fontWeight(.medium)
+                    Text(!model.vulnerabilityChecksEnabled ? "Disabled in Settings." : model.isCheckingVulnerabilities ? "Checking advisories in the background. Updates are checked first." : "NVD matches desktop products and affected versions. OSV checks verified public npm packages. CISA identifies known exploitation.")
+                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                    Text("Coverage varies. No match doesn't establish that software is safe.").font(.system(size: 11)).foregroundStyle(.secondary)
+                }.padding(8).frame(maxWidth: .infinity, alignment: .leading)
+            }
             Text("Apps are matched automatically using shared catalogs, developer feeds, and update information included in the app. Uncertain matches are marked clearly and don't trigger reminders.")
                 .font(.system(size: 12)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
         }
@@ -286,6 +295,16 @@ struct UpdateRow: View {
                             .font(.system(size: 11)).foregroundStyle(.secondary)
                             .help(age.explanation)
                     }
+                    if let assessment = model.vulnerabilityAssessment(for: item), !assessment.findings.isEmpty,
+                       item.status == .available || item.status == .current {
+                        Button { model.vulnerabilityItem = item } label: {
+                            Label(assessment.badgeLabel(at: model.now), systemImage: "exclamationmark.shield")
+                        }
+                        .buttonStyle(.link).font(.system(size: 11))
+                        .foregroundStyle(assessment.isFresh(at: model.now) ? Color.red : Color.secondary)
+                        .accessibilityLabel("Vulnerability details for \(item.name)")
+                        .accessibilityValue(assessment.badgeLabel(at: model.now))
+                    }
                 }
                 Spacer(minLength: 4)
                 if model.installingID == item.id {
@@ -315,6 +334,11 @@ struct UpdateRow: View {
                         if let publisher = age.evidence?.publisherURL {
                             Link("Publication source", destination: publisher).font(.system(size: 11))
                         }
+                    }
+                    if model.vulnerabilityChecksEnabled, item.status == .available || item.status == .current {
+                        Button { model.vulnerabilityItem = item } label: {
+                            Label(model.vulnerabilityAssessment(for: item)?.summary ?? "Vulnerability check pending…", systemImage: "shield.lefthalf.filled")
+                        }.buttonStyle(.link).font(.system(size: 11))
                     }
                     if let firstSeen = model.firstDetectedDate(for: item) {
                         Text("First detected \(firstSeen.formatted(date: .abbreviated, time: .shortened))")

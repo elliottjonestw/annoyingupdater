@@ -1,3 +1,17 @@
+Vulnerability data
+==================
+
+NVD: https://nvd.nist.gov/
+This product uses the NVD API but is not endorsed or certified by the NVD.
+
+OSV: https://osv.dev/
+OSV aggregates advisories from their original publishers. Individual advisory
+records are linked in the app so their source and applicability can be reviewed.
+
+CISA Known Exploited Vulnerabilities catalog:
+https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+Official data mirror: https://github.com/cisagov/kev-data
+
 Annoying Updater — Third-party notices
 
 Yams 6.2.2

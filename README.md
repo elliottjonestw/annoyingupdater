@@ -28,6 +28,7 @@ When an update is available, Annoying Updater brings a reminder to the front. Up
 - **Keeps everything in one place.** See available updates first, apps that need a manual check next, and up-to-date software last.
 - **Shows what an update changes.** When published notes are available, **What’s New** shows releases between your installed version and the selected update, newest first. Read just the target release, load older history, or open the original notes. Missing history and sources that provide only the latest notes are clearly labelled.
 - **Shows how long updates have been waiting.** Uses the earliest newer dated publisher release it can find, labelled “Outdated for at least …”. When publication dates aren’t available, “Detected … ago” uses local tracking instead. Dates and sources are explained in the update’s details.
+- **Highlights known vulnerabilities.** Matches supported desktop apps to NVD product and affected-version records, and verified public npm packages to OSV advisories. See CVE details, reported fixes and CISA known-exploitation flags. Uncertain identities and unsupported conditions are labelled clearly; an empty result isn’t a claim of safety.
 - **Remembers what changed.** Local update history records installed version and build changes, including updates made outside Annoying Updater. Pending updates show when they were first detected.
 - **Helps you finish the job.** Installs supported Homebrew updates or takes you to the app, App Store, system updater, or developer's site.
 - **Starts with your Mac.** Open at login is on by default. Close the window and it keeps watch from the menu bar.
@@ -40,6 +41,16 @@ Some apps don't expose a reliable way to check for updates. Annoying Updater cle
 History gives you a searchable timeline of installed version and build changes, including updates made by other apps or installed manually. Open an entry to see the before and after, when the change was detected, and when its update was first detected, if known.
 
 Tracking starts with your first scan. History stays on your Mac, and you can clear it at any time.
+
+## Known vulnerabilities
+
+A vulnerability badge means an advisory matches the installed product and version. Open it for the advisory, severity when published, reported affected versions, and whether the offered update is outside those ranges. New updates can still be affected; an update is never labelled safe just because it is newer.
+
+Checks run separately in the background and reuse advisory data for up to a day. Product matching is automatic and deliberately conservative. Similar names alone do not qualify. Unsupported editions, version formats, platform conditions, private npm origins, browser extensions, and Homebrew patch/revision applicability may be unassessable. This checks whole-app advisories and verified public npm packages; it does not audit bundled libraries or npm dependencies. A missing badge does not mean there are no vulnerabilities.
+
+NVD receives supported product names and versions; OSV receives verified public npm package names and versions. Local paths and usernames are not included in requests. CISA's public catalog adds known-exploitation information. You can turn these lookups off in Settings. Updates and 15-minute reminders continue independently.
+
+This product uses the [NVD API](https://nvd.nist.gov/) but is not endorsed or certified by the NVD. Package advisories come from [OSV](https://osv.dev/), and known-exploitation flags from [CISA KEV](https://github.com/cisagov/kev-data).
 
 ## Check from Finder
 
@@ -55,7 +66,7 @@ The app isn't Developer ID signed or notarized yet. If macOS blocks it, follow [
 
 ## Private by design
 
-No account. No Annoying Updater server. App matching happens on your Mac; your installed-app inventory isn't uploaded to the public app catalogs. Update checks contact Apple, the catalogs, and the relevant developers or GitHub. If you connect the optional browser companion, extension checks send identifiers and, when needed, installed/browser versions to Google or Mozilla; browsing history, tabs, cookies, and passwords are never accessed.
+No account. No Annoying Updater server. App matching happens on your Mac; your installed-app inventory isn't uploaded to the public app catalogs. Update checks contact Apple, the catalogs, and the relevant developers or GitHub. Vulnerability lookups additionally contact NVD, OSV and CISA’s official data mirror on GitHub as described above. If you connect the optional browser companion, extension checks send identifiers and, when needed, installed/browser versions to Google or Mozilla; browsing history, tabs, cookies, and passwords are never accessed.
 
 ## Build it yourself
 

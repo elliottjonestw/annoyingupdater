@@ -57,13 +57,14 @@ public enum CommandLineTools {
                 root = URL(fileURLWithPath: path).resolvingSymlinksInPath().path
                 guard seen.insert(root).inserted else { continue }
                 let inventory = try await CommandRunner.run(executable, ["ls", "--global", "--depth=0", "--json"], timeout: 45, environment: environment).requireSuccess()
-                let baseline = try parseNpm(installed: inventory, outdated: nil, executable: executable, root: root)
+                let publicPackages = NpmPackageOrigin.inspect(inventory: inventory, root: root)
+                let baseline = try parseNpm(installed: inventory, outdated: nil, executable: executable, root: root, publicPackages: publicPackages)
                 result.snapshots += baseline.snapshots
                 let start = result.items.count
                 result.items += baseline.items
                 let outdated = try await CommandRunner.run(executable, ["outdated", "--global", "--json"], timeout: 60, environment: environment)
                 guard outdated.status == 0 || outdated.status == 1 else { throw CheckError.failed("npm couldn't check its configured registry.") }
-                let parsed = try parseNpm(installed: inventory, outdated: outdated.output, executable: executable, root: root)
+                let parsed = try parseNpm(installed: inventory, outdated: outdated.output, executable: executable, root: root, publicPackages: publicPackages)
                 result.items.replaceSubrange(start..<result.items.count, with: parsed.items)
                 result.reports.append(ProviderReport("npm Tools (\(root))", "\(parsed.items.count) global packages checked"))
             } catch {
@@ -134,7 +135,7 @@ public enum CommandLineTools {
         return result
     }
 
-    public static func parseNpm(installed: Data, outdated: Data?, executable: String, root: String) throws -> ToolCheck {
+    public static func parseNpm(installed: Data, outdated: Data?, executable: String, root: String, publicPackages: [String: VulnerabilityPackage] = [:]) throws -> ToolCheck {
         guard let inventory = try JSONSerialization.jsonObject(with: installed) as? [String: Any], inventory["error"] == nil,
               inventory["problems"] == nil else { throw CheckError.invalidResponse }
         if inventory["dependencies"] != nil && !(inventory["dependencies"] is [String: [String: Any]]) { throw CheckError.invalidResponse }
@@ -154,7 +155,7 @@ public enum CommandLineTools {
             let id = "tool:npm:\(root):\(name)"
             let path = root + "/" + name
             var item = UpdateItem(id: id, name: name, path: path, installedVersion: version, source: .npm, status: .unverified,
-                detail: "Global npm tool · \(root)", softwareKind: .commandLineTool)
+                detail: "Global npm tool · \(root)", softwareKind: .commandLineTool, vulnerabilityPackage: publicPackages[name])
             result.snapshots.append(SoftwareSnapshot(id: id, name: name, path: path, version: version, kind: .commandLineTool))
             if let candidate = candidates[name] {
                 let current = candidate["current"] as! String, latest = candidate["latest"] as! String
