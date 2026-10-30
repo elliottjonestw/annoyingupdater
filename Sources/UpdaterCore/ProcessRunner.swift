@@ -27,11 +27,11 @@ public struct CommandResult: Sendable {
 
 public enum CommandRunner {
     /// File-backed output avoids pipe-buffer deadlocks. No shell or password input is used.
-    public static func run(_ executable: String, _ arguments: [String], timeout: TimeInterval = 60) async throws -> CommandResult {
-        try await Task.detached(priority: .utility) { try runBlocking(executable, arguments, timeout: timeout) }.value
+    public static func run(_ executable: String, _ arguments: [String], timeout: TimeInterval = 60, environment: [String: String] = [:]) async throws -> CommandResult {
+        try await Task.detached(priority: .utility) { try runBlocking(executable, arguments, timeout: timeout, additions: environment) }.value
     }
 
-    private static func runBlocking(_ executable: String, _ arguments: [String], timeout: TimeInterval) throws -> CommandResult {
+    private static func runBlocking(_ executable: String, _ arguments: [String], timeout: TimeInterval, additions: [String: String]) throws -> CommandResult {
             let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             defer { try? FileManager.default.removeItem(at: directory) }
@@ -49,6 +49,7 @@ public enum CommandRunner {
             environment["LC_ALL"] = "C"; environment["LANG"] = "en_US.UTF-8"
             environment["HOMEBREW_NO_AUTO_UPDATE"] = "1"; environment["HOMEBREW_NO_ANALYTICS"] = "1"
             environment["PATH"] = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+            environment.merge(additions) { _, new in new }
             process.environment = environment
             process.standardOutput = out; process.standardError = err
             process.standardInput = FileHandle.nullDevice

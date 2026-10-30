@@ -167,6 +167,12 @@ final class AppModel: ObservableObject {
     func update(_ item: UpdateItem) async {
         guard installingID == nil, !isChecking, !isClearingHistory else { return }
         message = nil
+        if case .copyCommand(let command) = item.action {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(command, forType: .string)
+            messageIsError = false; message = "Update command copied. Paste it into Terminal when you're ready."
+            return
+        }
         if isDemo {
             installingID = item.id; hideReminder?()
             try? await Task.sleep(for: .seconds(1.2))
@@ -227,6 +233,7 @@ final class AppModel: ObservableObject {
             } catch { showError(error.localizedDescription) }
             installingID = nil
             await check()
+        case .copyCommand: break
         case .microsoft, .none:
             showError("Direct installation isn't available for this app yet. Open its own updater to continue.")
         }

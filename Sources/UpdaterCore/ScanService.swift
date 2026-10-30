@@ -6,9 +6,9 @@ public enum ScanService {
         let apps = inventory.apps
         var snapshots = apps.map(SoftwareSnapshot.init(app:)) + [SoftwareSnapshot.operatingSystem]
         if let ownApp { snapshots.append(ownApp) }
-        let observation = HistoryObservation(software: snapshots, uncertainPaths: inventory.uncertainPaths)
+        var observation = HistoryObservation(software: snapshots, uncertainPaths: inventory.uncertainPaths)
         async let system = SystemProvider.check()
-        async let brew = HomebrewProvider.check(apps)
+        async let managed = managedSoftware(apps)
         async let store = AppStoreProvider.check(apps.filter(\.isAppStore), country: country)
         let external = apps.filter { !$0.isAppStore }
         async let homebrewCatalog = HomebrewCatalogProvider.check(external)
@@ -29,7 +29,9 @@ public enum ScanService {
             developer.append(contentsOf: results)
         }
         let (systemItems, systemReport) = await system
-        let (brewItems, brewReport) = await brew
+        let (tools, brewItems, brewReport) = await managed
+        observation.software += tools.snapshots
+        observation.uncertainPaths += tools.uncertainPaths
         let storeItems = await store
         let (homebrewCatalogItems, homebrewCatalogReport) = await homebrewCatalog
         let (appCatalogItems, appCatalogReport) = await appCatalog
@@ -44,6 +46,13 @@ public enum ScanService {
         reports.append(ProviderReport("Microsoft AutoUpdate", FileManager.default.fileExists(atPath: mau) ? "Use Microsoft AutoUpdate for apps without a published feed" : "Not installed"))
         // MAU's listing schema and external Sparkle installation need a real-device
         // feasibility pass. Do not fabricate support or execute unverified installers.
-        return ScanResult(items: systemItems + items, reports: reports, observation: observation)
+        reports += tools.reports
+        return ScanResult(items: systemItems + items + tools.items, reports: reports, observation: observation)
+    }
+    private static func managedSoftware(_ apps: [InstalledApp]) async -> (ToolCheck, [UpdateItem], ProviderReport) {
+        let tools = await CommandLineTools.check()
+        let failedRefresh = tools.reports.contains { $0.name.hasPrefix("Homebrew Tools") && $0.hasError }
+        let (items, report) = await HomebrewProvider.check(apps, refresh: failedRefresh)
+        return (tools, items, report)
     }
 }

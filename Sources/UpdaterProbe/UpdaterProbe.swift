@@ -13,6 +13,11 @@ enum UpdaterProbe {
             let name = CommandLine.arguments[index + 1]
             let result: ([UpdateItem], ProviderReport)
             switch name {
+            case "tools":
+                let tools = await CommandLineTools.check()
+                FileHandle.standardOutput.write(try encoder.encode(ScanResult(items: tools.items, reports: tools.reports,
+                    observation: HistoryObservation(software: tools.snapshots, uncertainPaths: tools.uncertainPaths))))
+                return
             case "homebrew-catalog": result = await HomebrewCatalogProvider.check(apps)
             case "app-catalog": result = await AppCatalogProvider.check(apps)
             case "electron": result = await ElectronProvider.check(apps)

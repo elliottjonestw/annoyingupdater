@@ -4,11 +4,11 @@ public enum HomebrewProvider {
     public static var executable: String? {
         ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"].first { FileManager.default.isExecutableFile(atPath: $0) }
     }
-    public static func check(_ apps: [InstalledApp]) async -> ([UpdateItem], ProviderReport) {
+    public static func check(_ apps: [InstalledApp], refresh: Bool = true) async -> ([UpdateItem], ProviderReport) {
         guard let brew = executable else { return ([], ProviderReport("Homebrew", "Not installed")) }
         do {
             // Explicit refresh: outdated alone may use stale metadata. Never install while checking.
-            _ = try await CommandRunner.run(brew, ["update", "--quiet"], timeout: 90).requireSuccess()
+            if refresh { _ = try await CommandRunner.run(brew, ["update", "--quiet"], timeout: 90).requireSuccess() }
             let data = try await CommandRunner.run(brew, ["outdated", "--cask", "--greedy-auto-updates", "--json=v2"], timeout: 60).requireSuccess()
             let info = try await CommandRunner.run(brew, ["info", "--cask", "--json=v2", "--installed"], timeout: 60).requireSuccess()
             return (try parse(outdated: data, installed: info, apps: apps, executable: brew), ProviderReport("Homebrew", "Checked installed casks"))

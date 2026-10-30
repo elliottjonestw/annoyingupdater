@@ -3,6 +3,7 @@ import Foundation
 public enum UpdateSource: String, Codable, CaseIterable, Sendable {
     case system = "macOS", appStore = "App Store", sparkle = "Developer", homebrew = "Homebrew", microsoft = "Microsoft", unknown = "Unrecognized"
     case homebrewCatalog = "Homebrew Catalog", appCatalog = "App Catalog", electron = "Electron", github = "GitHub"
+    case homebrewFormula = "Homebrew Tools", npm = "npm Tools"
 }
 
 public enum UpdateStatus: String, Codable, Sendable {
@@ -29,6 +30,7 @@ public enum UpdateAction: Codable, Equatable, Sendable {
     case homebrew(executable: String, cask: String)
     case microsoft(executable: String, appID: String)
     case none
+    case copyCommand(String)
 
     public var isDirect: Bool {
         switch self { case .homebrew, .microsoft: return true; default: return false }
@@ -39,6 +41,7 @@ public enum UpdateAction: Codable, Equatable, Sendable {
         case .appStore: return "Open App Store"
         case .openApp: return "Open App"
         case .website: return "Visit Developer"
+        case .copyCommand: return "Copy Update Command"
         case .homebrew, .microsoft: return "Update"
         case .none: return "Unavailable"
         }
@@ -58,14 +61,17 @@ public struct UpdateItem: Identifiable, Codable, Equatable, Sendable {
     public var detail: String
     public var checkedAt: Date?
     public var verificationIssue: VerificationIssue?
+    public var softwareKind: SoftwareKind?
+    public var kind: SoftwareKind { softwareKind ?? (source == .system ? .macOS : .application) }
 
     public init(id: String, name: String, bundleID: String = "", path: String? = nil, installedVersion: String,
                 availableVersion: String? = nil, source: UpdateSource, status: UpdateStatus, action: UpdateAction = .none,
-                detail: String = "", checkedAt: Date? = nil, verificationIssue: VerificationIssue? = nil) {
+                detail: String = "", checkedAt: Date? = nil, verificationIssue: VerificationIssue? = nil, softwareKind: SoftwareKind? = nil) {
         self.id = id; self.name = name; self.bundleID = bundleID; self.path = path
         self.installedVersion = installedVersion; self.availableVersion = availableVersion
         self.source = source; self.status = status; self.action = action; self.detail = detail; self.checkedAt = checkedAt
         self.verificationIssue = verificationIssue
+        self.softwareKind = softwareKind
     }
 }
 
@@ -112,6 +118,14 @@ public struct ScanResult: Codable, Sendable {
     /// Keep historical findings visible on failure, without making them eligible for a fresh reminder.
     public func preservingLastFindings(from previous: [UpdateItem]) -> ScanResult {
         var merged = self
+        // A failed manager must not make previously observed tools silently disappear.
+        for old in previous where old.kind == .commandLineTool && !items.contains(where: { $0.id == old.id }) {
+            guard let path = old.path, observation?.uncertainPaths.contains(where: { path == $0 || path.hasPrefix($0 + "/") }) == true else { continue }
+            var item = old; item.status = .unverified
+            item.detail = "\(old.source.rawValue) couldn't be checked. Showing the last observed version."
+            item.verificationIssue = .unavailable
+            merged.items.append(item)
+        }
         for index in merged.items.indices {
             guard let old = previous.first(where: { $0.id == merged.items[index].id }), let version = old.availableVersion else { continue }
             let providerName = old.source == .sparkle ? "Developer feeds" : old.source.rawValue

@@ -96,7 +96,7 @@ private struct HistoryRow: View {
     private var iconItem: UpdateItem {
         UpdateItem(id: entry.software.id, name: entry.software.name,
             path: entry.software.kind == .updater ? Bundle.main.bundlePath : entry.software.path,
-            installedVersion: entry.software.version, source: entry.software.kind == .macOS ? .system : .unknown, status: .current)
+            installedVersion: entry.software.version, source: entry.software.kind == .macOS ? .system : .unknown, status: .current, softwareKind: entry.software.kind)
     }
     private var versionText: String {
         if entry.change == .buildChanged { return "\(entry.software.version) · Build \(entry.previousBuild) → \(entry.software.build)" }

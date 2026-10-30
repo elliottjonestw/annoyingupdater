@@ -2,7 +2,7 @@ import Foundation
 import Darwin
 
 public enum SoftwareKind: String, Codable, Sendable {
-    case application, macOS, updater
+    case application, macOS, updater, commandLineTool, browserExtension
 }
 
 /// Fresh installed metadata, independent of catalogs and cached availability.
