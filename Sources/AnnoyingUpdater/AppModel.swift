@@ -6,6 +6,9 @@ import UpdaterCore
 @MainActor
 final class AppModel: ObservableObject {
     @Published var selection: SidebarPage? = .updates
+    @Published var releaseNotesRequest: ReleaseNotesRequest?
+    @Published private var releaseNotesAvailability: [String: Bool] = [:]
+    private var checkingNotes: Set<String> = []
     @Published var search = ""
     @Published var finderSelectedPaths: Set<String> = []
     @Published var historySearch = ""
@@ -178,6 +181,15 @@ final class AppModel: ObservableObject {
         tick()
         if finderCheckPending { Task { await check() } }
         else if discoveryRefreshPending { discoveryRefreshPending = false; scheduleDiscoveryRefresh() }
+    }
+
+    func hasReleaseNotes(_ request: ReleaseNotesRequest) -> Bool { releaseNotesAvailability[request.id] == true }
+    func prepareReleaseNotes(_ request: ReleaseNotesRequest) async {
+        guard !checkingNotes.contains(request.id) else { return }
+        checkingNotes.insert(request.id)
+        defer { checkingNotes.remove(request.id) }
+        if isDemo { releaseNotesAvailability[request.id] = true; return }
+        releaseNotesAvailability[request.id] = (try? await ReleaseNotesService.hasPublishedNotes(request)) ?? false
     }
 
     func setBrowserMonitoring(_ enabled: Bool) {

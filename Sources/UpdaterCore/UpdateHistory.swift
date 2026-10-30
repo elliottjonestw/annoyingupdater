@@ -15,23 +15,31 @@ public struct SoftwareSnapshot: Codable, Equatable, Sendable, Identifiable {
     public var version: String
     public var build: String
     public var kind: SoftwareKind
+    public var releaseNotes: ReleaseNotesContext?
 
     public init(id: String, name: String, bundleID: String = "", path: String? = nil,
-                version: String, build: String = "", kind: SoftwareKind = .application, resolvedPath: String? = nil) {
+                version: String, build: String = "", kind: SoftwareKind = .application, resolvedPath: String? = nil, releaseNotes: ReleaseNotesContext? = nil) {
         self.id = id; self.name = name; self.bundleID = bundleID; self.path = path
-        self.version = version; self.build = build; self.kind = kind; self.resolvedPath = resolvedPath
+        self.version = version; self.build = build; self.kind = kind; self.resolvedPath = resolvedPath; self.releaseNotes = releaseNotes
     }
     public init(app: InstalledApp) {
         let location = app.installationPath ?? app.path
-        self.init(id: app.installationIdentity ?? location, name: app.name, bundleID: app.bundleID, path: location, version: app.version, build: app.build, resolvedPath: app.path)
+        self.init(id: app.installationIdentity ?? location, name: app.name, bundleID: app.bundleID, path: location, version: app.version, build: app.build, resolvedPath: app.path, releaseNotes: app.item.releaseNotes)
     }
     public static func ownApp(at url: URL) -> SoftwareSnapshot? {
         guard let data = try? Data(contentsOf: url.appendingPathComponent("Contents/Info.plist")),
               let info = (try? PropertyListSerialization.propertyList(from: data, format: nil)) as? [String: Any],
               info["CFBundleIdentifier"] as? String == "com.annoyingupdater.app",
               let version = info["CFBundleShortVersionString"] as? String else { return nil }
+        var sources: [ReleaseNotesSource] = []
+        if let feed = (info["SUFeedURL"] as? String).flatMap(URL.init(string:)), PublicURL.isAllowed(feed) {
+            if feed.host == "github.com", feed.pathComponents.count >= 3,
+               let publisher = URL(string: "https://github.com/" + feed.pathComponents[1...2].joined(separator: "/")),
+               let source = ReleaseNotesSource.publisher(publisher) { sources.append(source) }
+            sources.append(ReleaseNotesSource(.sparkle, url: feed))
+        }
         return SoftwareSnapshot(id: "self:com.annoyingupdater.app", name: "Annoying Updater", bundleID: "com.annoyingupdater.app",
-            path: url.path, version: version, build: info["CFBundleVersion"] as? String ?? "", kind: .updater)
+            path: url.path, version: version, build: info["CFBundleVersion"] as? String ?? "", kind: .updater, releaseNotes: ReleaseNotesContext(sources: sources))
     }
     public static var operatingSystem: SoftwareSnapshot {
         let os = ProcessInfo.processInfo.operatingSystemVersion

@@ -6,7 +6,17 @@ enum UpdaterProbe {
     static func main() async throws {
         if InventoryWorker.handleCommandLine() { return }
         let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        if CommandLine.arguments.contains("--inventory") {
+        if let flag = CommandLine.arguments.firstIndex(of: "--release-notes"), CommandLine.arguments.indices.contains(flag + 1) {
+            let item = try JSONDecoder().decode(UpdateItem.self, from: ElectronProvider.boundedFile(URL(fileURLWithPath: CommandLine.arguments[flag + 1]), maxBytes: 512 * 1024))
+            let cache: MetadataCache
+            if let flag = CommandLine.arguments.firstIndex(of: "--notes-source-data"), CommandLine.arguments.indices.contains(flag + 1) {
+                // Diagnostic fixture injection never changes the app's source or credentials.
+                let data = try ElectronProvider.boundedFile(URL(fileURLWithPath: CommandLine.arguments[flag + 1]), maxBytes: 4 * 1024 * 1024)
+                cache = MetadataCache(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString), loader: { _, _ in data })
+            } else { cache = .shared }
+            let result = try await ReleaseNotesService.load(ReleaseNotesRequest(item: item), cache: cache)
+            FileHandle.standardOutput.write(try encoder.encode(result))
+        } else if CommandLine.arguments.contains("--inventory") {
             let items = Inventory.discover().map(\.item)
             FileHandle.standardOutput.write(try encoder.encode(items))
         } else if CommandLine.arguments.contains("--expanded-inventory") {

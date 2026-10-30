@@ -95,7 +95,10 @@ public enum CatalogMatching {
         item.status = ReleaseVersions.status(candidate: candidate.version, installed: app.version, build: app.build)
         item.verificationIssue = item.status == .unverified ? .versionFormat : nil
         item.checkedAt = checkedAt
-        if let url = candidate.homepage, PublicURL.isAllowed(url) { item.action = .website(url.absoluteString) }
+        if let url = candidate.homepage, PublicURL.isAllowed(url) {
+            item.action = .website(url.absoluteString)
+            if let source = ReleaseNotesSource.publisher(url) { item.releaseNotes?.sources.append(source) }
+        }
         switch item.status {
         case .available:
             item.availableVersion = ReleaseVersions.numeric(candidate.version) ?? candidate.version

@@ -128,6 +128,9 @@ private struct HistoryRow: View {
             }.padding(.horizontal, 16).padding(.vertical, 15)
             if expanded {
                 VStack(alignment: .leading, spacing: 8) {
+                    if let request = ReleaseNotesRequest(history: entry), model.hasReleaseNotes(request) {
+                        Button("What's New in This Update") { model.releaseNotesRequest = request }
+                    }
                     LabeledContent("Previous version", value: version(entry.previousVersion, build: entry.previousBuild))
                     LabeledContent("Observed version", value: version(entry.software.version, build: entry.software.build))
                     if let first = entry.firstDetectedAvailableAt {
@@ -142,6 +145,9 @@ private struct HistoryRow: View {
                 .font(.system(size: 12)).textSelection(.enabled)
                 .padding(.leading, 70).padding(.trailing, 16).padding(.bottom, 16)
             }
+        }
+        .task(id: entry.id + String(expanded)) {
+            if expanded, let request = ReleaseNotesRequest(history: entry) { await model.prepareReleaseNotes(request) }
         }
     }
     private func version(_ version: String, build: String) -> String {

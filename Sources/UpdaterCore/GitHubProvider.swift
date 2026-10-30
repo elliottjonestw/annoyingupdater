@@ -85,6 +85,7 @@ public enum GitHubProvider {
               let draft = release["draft"] as? Bool, let prerelease = release["prerelease"] as? Bool,
               let tag = release["tag_name"] as? String, let assets = release["assets"] as? [[String: Any]] else { throw CheckError.invalidResponse }
         var item = app.item; item.source = .github; item.status = .unverified
+        item.releaseNotes?.prepend(ReleaseNotesSource(.github, url: URL(string: "https://api.github.com/repos/\(metadata.repository.owner)/\(metadata.repository.name)/releases")!, identifier: metadata.productNames.joined(separator: "|")))
         item.action = .website(metadata.repository.website.absoluteString)
         let version = tag.replacingOccurrences(of: #"^release[-/]"#, with: "", options: [.regularExpression, .caseInsensitive])
         guard !draft, !prerelease, ReleaseVersions.numeric(version) != nil else {
@@ -126,6 +127,7 @@ public enum GitHubProvider {
                     items.append(try evaluate(snapshot.data, app: app, metadata: metadata, checkedAt: snapshot.fetchedAt))
                 } catch {
                     var item = app.item; item.source = .github; item.status = .unverified
+                    item.releaseNotes?.prepend(ReleaseNotesSource(.github, url: URL(string: "https://api.github.com/repos/\(metadata.repository.owner)/\(metadata.repository.name)/releases")!, identifier: metadata.productNames.joined(separator: "|")))
                     item.action = .website(metadata.repository.website.absoluteString)
                     item.detail = "GitHub releases couldn't be checked. \(error.localizedDescription)"
                     items.append(item)

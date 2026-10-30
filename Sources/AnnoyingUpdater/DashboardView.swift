@@ -104,6 +104,7 @@ struct DashboardView: View {
             }
         }
         .frame(minWidth: 790, minHeight: 540)
+        .sheet(item: $model.releaseNotesRequest) { ReleaseNotesView(request: $0, demo: model.isDemo) }
     }
 
     private var updatesPage: some View {
@@ -274,6 +275,11 @@ struct UpdateRow: View {
                         Text(item.installedVersion)
                         if let version = item.availableVersion { Image(systemName: "arrow.right").font(.system(size: 9)); Text(version) }
                         Text("·"); Text(item.source.rawValue)
+                        let request = ReleaseNotesRequest(item: item)
+                        if item.availableVersion != nil && model.hasReleaseNotes(request) {
+                            Button("What's New") { model.releaseNotesRequest = request }
+                                .buttonStyle(.link).font(.system(size: 11)).accessibilityLabel("What's New in \(item.name)")
+                        }
                     }.font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer(minLength: 4)
@@ -309,6 +315,9 @@ struct UpdateRow: View {
                     if let checked = item.checkedAt { Text("Checked \(checked.formatted(date: .abbreviated, time: .shortened))").font(.system(size: 10)).foregroundStyle(.tertiary) }
                 }.padding(.leading, 70).padding(.trailing, 16).padding(.bottom, 16).frame(maxWidth: .infinity, alignment: .leading)
             }
+        }
+        .task(id: ReleaseNotesRequest(item: item).id + String(model.lastCheck?.timeIntervalSinceReferenceDate ?? 0)) {
+            if item.availableVersion != nil { await model.prepareReleaseNotes(ReleaseNotesRequest(item: item)) }
         }
     }
     private var statusSymbol: String {

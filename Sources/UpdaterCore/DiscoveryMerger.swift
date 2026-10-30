@@ -35,6 +35,15 @@ public enum DiscoveryMerger {
             items[item.id] = item
         }
         for item in store where identities.contains(item.id) { items[item.id] = item }
+        // Keep proven notes sources even when another provider wins availability.
+        for candidate in repositories + publisher + managed + homebrewCatalog + appCatalog {
+            guard var winner = items[candidate.id], let notes = candidate.releaseNotes else { continue }
+            if winner.releaseNotes == nil { winner.releaseNotes = notes }
+            else {
+                for source in notes.sources where !(winner.releaseNotes?.sources.contains(source) ?? false) { winner.releaseNotes?.sources.append(source) }
+            }
+            items[candidate.id] = winner
+        }
         return items.values.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 }

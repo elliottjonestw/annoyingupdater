@@ -65,17 +65,19 @@ public struct UpdateItem: Identifiable, Codable, Equatable, Sendable {
     public var verificationIssue: VerificationIssue?
     public var softwareKind: SoftwareKind?
     public var installationPath: String?
+    public var releaseNotes: ReleaseNotesContext?
     public var kind: SoftwareKind { softwareKind ?? (source == .system ? .macOS : .application) }
 
     public init(id: String, name: String, bundleID: String = "", path: String? = nil, installedVersion: String,
                 availableVersion: String? = nil, source: UpdateSource, status: UpdateStatus, action: UpdateAction = .none,
-                detail: String = "", checkedAt: Date? = nil, verificationIssue: VerificationIssue? = nil, softwareKind: SoftwareKind? = nil, installationPath: String? = nil) {
+                detail: String = "", checkedAt: Date? = nil, verificationIssue: VerificationIssue? = nil, softwareKind: SoftwareKind? = nil, installationPath: String? = nil, releaseNotes: ReleaseNotesContext? = nil) {
         self.id = id; self.name = name; self.bundleID = bundleID; self.path = path
         self.installedVersion = installedVersion; self.availableVersion = availableVersion
         self.source = source; self.status = status; self.action = action; self.detail = detail; self.checkedAt = checkedAt
         self.verificationIssue = verificationIssue
         self.softwareKind = softwareKind
         self.installationPath = installationPath
+        self.releaseNotes = releaseNotes
     }
 }
 
@@ -98,7 +100,8 @@ public struct InstalledApp: Codable, Sendable {
     public var item: UpdateItem {
         UpdateItem(id: path, name: name, bundleID: bundleID, path: path, installedVersion: version,
                    source: .unknown, status: .unsupported, action: .openApp(path),
-                   detail: "This app doesn't expose a supported update source. You might be able to check for updates by opening the app.", installationPath: installationPath)
+                   detail: "This app doesn't expose a supported update source. You might be able to check for updates by opening the app.", installationPath: installationPath,
+                   releaseNotes: ReleaseNotesContext(sources: feedURL.filterPublic.map { [ReleaseNotesSource(.sparkle, url: $0)] } ?? [], installedBuild: build))
     }
 }
 
@@ -195,4 +198,8 @@ public enum Versions {
         return normalized(lhs).compare(normalized(rhs), options: [.numeric, .caseInsensitive], locale: Locale(identifier: "en_US_POSIX"))
     }
     public static func newer(_ candidate: String, than installed: String) -> Bool { compare(candidate, installed) == .orderedDescending }
+}
+
+private extension Optional where Wrapped == URL {
+    var filterPublic: URL? { flatMap { PublicURL.isAllowed($0) ? $0 : nil } }
 }

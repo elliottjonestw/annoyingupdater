@@ -105,6 +105,9 @@ public enum CommandLineTools {
             let dependency = kegs.allSatisfy { $0["installed_on_request"] as? Bool == false }
             var item = UpdateItem(id: id, name: name, path: path, installedVersion: installedVersion ?? versions.joined(separator: ", "),
                 source: .homebrewFormula, status: .unverified, detail: "Homebrew formula\(dependency ? " · Dependency" : "") · \(prefix)", softwareKind: .commandLineTool)
+            if let homepage = (formula["homepage"] as? String).flatMap(URL.init(string:)), let source = ReleaseNotesSource.publisher(homepage) {
+                item.releaseNotes = ReleaseNotesContext(sources: [source])
+            }
             if let installedVersion {
                 result.snapshots.append(SoftwareSnapshot(id: id, name: name, path: path, version: installedVersion, kind: .commandLineTool))
                 if outdated != nil {

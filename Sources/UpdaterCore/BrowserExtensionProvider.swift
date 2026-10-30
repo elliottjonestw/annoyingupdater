@@ -99,6 +99,7 @@ public enum BrowserExtensionProvider {
         let parser = XMLParser(data: data); parser.shouldResolveExternalEntities = false; parser.delegate = delegate
         guard parser.parse(), delegate.matches == 1, delegate.appOK, let status = delegate.status else { throw CheckError.invalidResponse }
         var item = base(ext, profile: profile)
+        item.releaseNotes = ReleaseNotesContext(sources: [ReleaseNotesSource(.website, url: URL(string: "https://chromewebstore.google.com/detail/" + ext.id)!)])
         if status == "noupdate" { item.status = .current; item.detail += " The browser's store update service reports no compatible update."; return item }
         guard status == "ok", let version = delegate.version, BrowserProfile.numeric(version), BrowserProfile.numeric(ext.version) else { throw CheckError.invalidResponse }
         item.availableVersion = Versions.newer(version, than: ext.version) ? version : nil
@@ -120,6 +121,7 @@ public enum BrowserExtensionProvider {
              (!BrowserProfile.numeric(maximum) || Versions.compare(profile.browserVersion, maximum) == .orderedDescending)) {
             item.status = .unverified; item.verificationIssue = .platform; item.detail += " The latest public version isn't compatible with this Firefox version."; return item
         }
+        item.releaseNotes = ReleaseNotesContext(sources: [ReleaseNotesSource(.firefox, url: URL(string: "https://addons.mozilla.org/firefox/addon/" + ext.id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)!)!, identifier: ext.id)])
         item.availableVersion = Versions.newer(version, than: ext.version) ? version : nil
         item.status = item.availableVersion == nil ? .current : .available
         item.detail += " Mozilla Add-ons lists compatible public version \(version). Firefox manages installation."

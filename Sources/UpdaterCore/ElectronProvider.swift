@@ -99,6 +99,7 @@ public enum ElectronProvider {
         item.verificationIssue = item.status == .unverified ? .versionFormat : nil
         item.availableVersion = item.status == .available ? manifest.version : nil
         item.checkedAt = checkedAt
+        item.releaseNotes?.prepend(ReleaseNotesSource(.electron, url: feed))
         item.detail = item.status == .unverified ? "The publisher's version format couldn't be compared reliably. Check in the app."
             : "Checked the update feed discovered inside this app. Open the app to finish updating."
         return item
@@ -112,7 +113,11 @@ public enum ElectronProvider {
                 let config = try parseConfiguration(try boundedFile(file, maxBytes: 64 * 1024))
                 let feed = try manifestURL(config)
                 let snapshot = try await cache.load(feed, ttl: 3600, maxBytes: 512 * 1024)
-                items.append(try evaluate(snapshot.data, app: app, feed: feed, checkedAt: snapshot.fetchedAt))
+                var item = try evaluate(snapshot.data, app: app, feed: feed, checkedAt: snapshot.fetchedAt)
+                if config.provider == "github", let owner = config.owner, let repo = config.repo {
+                    item.releaseNotes?.prepend(ReleaseNotesSource(.github, url: URL(string: "https://api.github.com/repos/\(owner)/\(repo)/releases")!, identifier: app.name))
+                }
+                items.append(item)
             } catch {
                 var item = app.item; item.source = .electron; item.status = .unverified
                 item.verificationIssue = .unavailable

@@ -17,7 +17,8 @@ public enum SystemProvider {
             let version = String(text[versionRange]).trimmingCharacters(in: .whitespaces)
             return UpdateItem(id: "system:\(title):\(version)", name: title, installedVersion: title.lowercased().hasPrefix("macos") ? installedVersion : "System component",
                               availableVersion: version, source: .system, status: .available, action: .systemSettings,
-                              detail: "Available for this Mac. Software Update handles installation and any required restart.", checkedAt: date)
+                              detail: "Available for this Mac. Software Update handles installation and any required restart.", checkedAt: date,
+                              releaseNotes: ReleaseNotesContext(sources: [ReleaseNotesSource(.website, url: URL(string: "https://support.apple.com/en-us/100100")!)]))
         }
     }
 

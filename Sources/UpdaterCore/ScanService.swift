@@ -53,7 +53,13 @@ public enum ScanService {
         reports.append(browserResult.report)
         observation.software += browserResult.snapshots
         observation.uncertainPaths += browserResult.uncertainPaths
-        return ScanResult(items: systemItems + items + tools.items + browserResult.items, reports: reports, observation: observation)
+        let allItems = systemItems + items + tools.items + browserResult.items
+        for index in observation.software.indices {
+            let snapshot = observation.software[index]
+            if let matched = allItems.first(where: { $0.id == snapshot.id || $0.id == snapshot.resolvedPath || (snapshot.kind == .macOS && $0.source == .system && $0.name.lowercased().hasPrefix("macos")) }),
+               let context = matched.releaseNotes { observation.software[index].releaseNotes = context }
+        }
+        return ScanResult(items: allItems, reports: reports, observation: observation)
     }
     private static func managedSoftware(_ apps: [InstalledApp]) async -> (ToolCheck, [UpdateItem], ProviderReport) {
         let tools = await CommandLineTools.check()

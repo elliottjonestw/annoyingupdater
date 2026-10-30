@@ -12,7 +12,10 @@ public enum AppStoreProvider {
         for (index, app) in apps.enumerated() {
             guard let output = try? await CommandRunner.run("/usr/bin/mdls", ["-raw", "-name", "kMDItemAppStoreAdamID", app.path], timeout: 5), output.status == 0 else { continue }
             let id = output.text.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: "\"")))
-            if !id.isEmpty && id.allSatisfy(\.isNumber) { ids[id] = index; items[index].action = .appStore(id) }
+            if !id.isEmpty && id.allSatisfy(\.isNumber) {
+                ids[id] = index; items[index].action = .appStore(id)
+                items[index].releaseNotes?.prepend(ReleaseNotesSource(.appStore, url: URL(string: "https://apps.apple.com/app/id\(id)")!, identifier: id, region: country, bundleID: app.bundleID))
+            }
         }
         // Batch identifiers to avoid a separate network request for every app.
         let sorted = ids.keys.sorted()

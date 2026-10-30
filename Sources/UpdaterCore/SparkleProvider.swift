@@ -77,6 +77,7 @@ public enum SparkleProvider {
             guard let latest = releases.first else {
                 throw CheckError.failed("The publisher's feed has no compatible stable release for this Mac.")
             }
+            item.releaseNotes?.targetBuild = latest.build
             let available = Versions.newer(latest.build, than: app.build)
             item.status = available ? .available : .current
             item.availableVersion = available ? (latest.version.isEmpty ? latest.build : latest.version) : nil
