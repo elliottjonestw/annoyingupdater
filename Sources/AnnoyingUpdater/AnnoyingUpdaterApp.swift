@@ -95,7 +95,7 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     }
 
     @objc func showReminder() {
-        guard !model.updates.isEmpty else { return }
+        guard model.remindersEnabled, !model.updates.isEmpty else { return }
         model.demoRemindersEnabled = true
         if reminder == nil {
             let view = ReminderView(model: model, openDashboard: { [weak self] in
@@ -119,11 +119,11 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         menu.removeAllItems()
         let summary = model.isChecking ? "Checking for Updates…" : "\(model.updates.count) Update\(model.updates.count == 1 ? "" : "s") Available"
         let heading = NSMenuItem(title: summary, action: nil, keyEquivalent: ""); heading.isEnabled = false; menu.addItem(heading)
-        if model.isSnoozed { let item = NSMenuItem(title: model.snoozeDescription, action: nil, keyEquivalent: ""); item.isEnabled = false; menu.addItem(item) }
+        if !model.remindersEnabled || model.isSnoozed { let item = NSMenuItem(title: model.snoozeDescription, action: nil, keyEquivalent: ""); item.isEnabled = false; menu.addItem(item) }
         menu.addItem(.separator())
         add("Open Annoying Updater", #selector(showDashboard), to: menu)
         let check = add("Check for Updates", #selector(checkNow), to: menu); check.isEnabled = !model.isChecking && model.installingID == nil
-        let snooze = add("Snooze for 15 Minutes", #selector(snooze), to: menu); snooze.isEnabled = !model.updates.isEmpty
+        let snooze = add("Snooze for 15 Minutes", #selector(snooze), to: menu); snooze.isEnabled = model.remindersEnabled && !model.updates.isEmpty
         menu.addItem(.separator())
         add("Settings…", #selector(showSettings), key: ",", to: menu)
         add("Quit Annoying Updater", #selector(quit), key: "q", to: menu)

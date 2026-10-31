@@ -32,6 +32,7 @@ final class AppModel: ObservableObject {
     @Published var isChecking = false
     @Published private(set) var hasCompletedScan = false
     @Published var installingID: String?
+    @Published private(set) var remindersEnabled: Bool
     @Published var policy = ReminderPolicy()
     @Published var message: String?
     @Published var messageIsError = false
@@ -49,6 +50,7 @@ final class AppModel: ObservableObject {
     var statusDidChange: (() -> Void)?
     var appearanceDidChange: ((AppAppearance) -> Void)?
     private let defaults: UserDefaults
+    private let monitoringPreferences: MonitoringPreferences
     private let loginItems: LoginItemController
     private var heartbeat: Timer?
     private var historyStore: UpdateHistoryStore?
@@ -71,6 +73,7 @@ final class AppModel: ObservableObject {
     var isLoadingResults: Bool { isChecking || !hasCompletedScan }
     var isSnoozed: Bool { policy.isSnoozed(at: now) }
     var snoozeDescription: String {
+        guard remindersEnabled else { return "Reminders are off" }
         guard let until = policy.snoozedUntil, until > now else { return "Every 15 minutes while updates are available" }
         let minutes = max(1, Int(ceil(until.timeIntervalSince(now) / 60)))
         return "Snoozed · \(minutes) min remaining"
@@ -79,6 +82,8 @@ final class AppModel: ObservableObject {
     init(isDemo: Bool) {
         self.isDemo = isDemo
         defaults = isDemo ? UserDefaults(suiteName: "com.annoyingupdater.preview")! : .standard
+        monitoringPreferences = MonitoringPreferences(defaults: defaults)
+        remindersEnabled = monitoringPreferences.remindersEnabled
         loginItems = LoginItemController(service: SystemLoginItemService(), defaults: defaults)
         browserMonitoring = defaults.bool(forKey: "browserMonitoring")
         vulnerabilityChecksEnabled = defaults.object(forKey: "vulnerabilityChecksEnabled") as? Bool ?? true
@@ -154,7 +159,7 @@ final class AppModel: ObservableObject {
         if !isDemo && (lastCheck == nil || now.timeIntervalSince(lastCheck!) >= 3600) {
             Task { await check() }; return
         }
-        guard policy.shouldPresent(at: now, confirmedUpdates: updates.count, isInstalling: false, windowVisible: reminderVisible?() ?? false) else { return }
+        guard policy.shouldPresent(at: now, confirmedUpdates: updates.count, isInstalling: false, windowVisible: reminderVisible?() ?? false, remindersEnabled: remindersEnabled) else { return }
         // Revalidate before resurfacing, rather than repeating a stale cached finding.
         if !isDemo && (lastReminderValidation == nil || now.timeIntervalSince(lastReminderValidation!) >= ReminderPolicy.snoozeInterval) {
             Task { await check() }; return
@@ -322,7 +327,15 @@ final class AppModel: ObservableObject {
         }
     }
 
+    func setRemindersEnabled(_ enabled: Bool) {
+        remindersEnabled = enabled; monitoringPreferences.setRemindersEnabled(enabled)
+        if !enabled { hideReminder?() }
+        statusDidChange?()
+        if enabled { tick() }
+    }
+
     func snooze() {
+        guard remindersEnabled else { return }
         now = Date(); policy.snooze(at: now)
         if !isDemo { defaults.set(policy.snoozedUntil, forKey: "snoozedUntil") }
         hideReminder?(); statusDidChange?()

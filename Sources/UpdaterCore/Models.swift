@@ -200,8 +200,8 @@ public struct ReminderPolicy: Codable, Sendable {
     public init(snoozedUntil: Date? = nil) { self.snoozedUntil = snoozedUntil }
     public mutating func snooze(at date: Date) { snoozedUntil = date.addingTimeInterval(Self.snoozeInterval) }
     public func isSnoozed(at date: Date) -> Bool { snoozedUntil.map { $0 > date } ?? false }
-    public func shouldPresent(at date: Date, confirmedUpdates: Int, isInstalling: Bool, windowVisible: Bool) -> Bool {
-        confirmedUpdates > 0 && !isInstalling && !windowVisible && !isSnoozed(at: date)
+    public func shouldPresent(at date: Date, confirmedUpdates: Int, isInstalling: Bool, windowVisible: Bool, remindersEnabled: Bool = true) -> Bool {
+        remindersEnabled && confirmedUpdates > 0 && !isInstalling && !windowVisible && !isSnoozed(at: date)
     }
 }
 

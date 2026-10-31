@@ -31,6 +31,7 @@ When an update is available, Annoying Updater brings a reminder to the front. Up
 - **Highlights known vulnerabilities.** Matches supported desktop apps to NVD product and affected-version records, and verified public npm packages to OSV advisories. See CVE details, reported fixes and CISA known-exploitation flags. Uncertain identities and unsupported conditions are labelled clearly; an empty result isn’t a claim of safety.
 - **Remembers what changed.** Local update history records installed version and build changes, including updates made outside Annoying Updater. Pending updates show when they were first detected.
 - **Helps you finish the job.** Installs supported Homebrew updates or takes you to the app, App Store, system updater, or developer's site.
+- **Choose whether to be reminded.** Turn update reminders on or off in Settings. Turning them off closes an open reminder while update checks continue.
 - **Starts with your Mac.** Open at login is on by default. Close the window and it keeps watch from the menu bar.
 - **Keeps itself updated.** Downloads and verifies its own updates from GitHub, then installs them when you quit or choose Install and Relaunch.
 

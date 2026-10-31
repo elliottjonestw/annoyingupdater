@@ -20,9 +20,12 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.segmented)
                 LabeledContent("Check for updates", value: "Every hour")
+            } header: { Text("General") }
+            Section {
+                Toggle("Show update reminders", isOn: Binding(get: { model.remindersEnabled }, set: { model.setRemindersEnabled($0) }))
                 LabeledContent("Snooze duration", value: "15 minutes")
-            } header: { Text("General") } footer: {
-                Text("When updates are available, a reminder window comes to the front. Closing the reminder snoozes it for 15 minutes.")
+            } header: { Text("Reminders") } footer: {
+                Text("Reminders bring a window to the front when updates are available. Closing it snoozes reminders for 15 minutes. Turning reminders off closes the reminder window; update checks continue.")
             }
             Section {
                 Picker("App Store region", selection: Binding(get: { model.country }, set: { model.setCountry($0) })) {
