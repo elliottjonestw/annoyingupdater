@@ -196,9 +196,13 @@ public struct ScanResult: Codable, Sendable {
 /// A persisted deadline, rather than a repeating timer, survives sleep and relaunch.
 public struct ReminderPolicy: Codable, Sendable {
     public private(set) var snoozedUntil: Date?
-    public static let snoozeInterval: TimeInterval = 15 * 60
-    public init(snoozedUntil: Date? = nil) { self.snoozedUntil = snoozedUntil }
-    public mutating func snooze(at date: Date) { snoozedUntil = date.addingTimeInterval(Self.snoozeInterval) }
+    public private(set) var snoozedDuration: SnoozeDuration?
+    public init(snoozedUntil: Date? = nil, snoozedDuration: SnoozeDuration? = nil) {
+        self.snoozedUntil = snoozedUntil; self.snoozedDuration = snoozedDuration
+    }
+    public mutating func snooze(at date: Date, duration: SnoozeDuration = .fifteenMinutes) {
+        snoozedUntil = date.addingTimeInterval(duration.seconds); snoozedDuration = duration
+    }
     public func isSnoozed(at date: Date) -> Bool { snoozedUntil.map { $0 > date } ?? false }
     public func shouldPresent(at date: Date, confirmedUpdates: Int, isInstalling: Bool, windowVisible: Bool, remindersEnabled: Bool = true) -> Bool {
         remindersEnabled && confirmedUpdates > 0 && !isInstalling && !windowVisible && !isSnoozed(at: date)

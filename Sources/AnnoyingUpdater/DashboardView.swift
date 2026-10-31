@@ -96,7 +96,7 @@ struct DashboardView: View {
                 }
                 ToolbarItemGroup(placement: .primaryAction) {
                     Button { model.snooze() } label: { Label("Snooze", systemImage: "clock.badge") }
-                        .help("Snooze reminders for 15 minutes").disabled(!model.remindersEnabled || model.updates.isEmpty || model.isSnoozed)
+                        .help("Snooze reminders for \(model.snoozeDuration.label)").disabled(!model.remindersEnabled || model.updates.isEmpty || model.isSnoozed)
                     Button { Task { await model.check() } } label: { Label("Check for Updates", systemImage: "arrow.clockwise") }
                         .help("Check for updates now").disabled(model.isChecking || model.installingID != nil)
                         .keyboardShortcut("r", modifiers: .command)
@@ -134,10 +134,10 @@ struct DashboardView: View {
                     Image(systemName: "moon.zzz").font(.title3).foregroundStyle(.secondary)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Reminders snoozed").font(.system(size: 12, weight: .semibold))
-                        if let until = model.policy.snoozedUntil { Text("Your next reminder will be after \(until.formatted(date: .omitted, time: .shortened)).").font(.system(size: 12)).foregroundStyle(.secondary) }
+                        if let until = model.policy.snoozedUntil { Text("Your next reminder will be after \(until.formatted(date: Calendar.current.isDateInToday(until) ? .omitted : .abbreviated, time: .shortened)).").font(.system(size: 12)).foregroundStyle(.secondary) }
                     }
                     Spacer()
-                    Text("15 min").font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
+                    Text((model.policy.snoozedDuration ?? .fifteenMinutes).label).font(.system(size: 11, weight: .medium)).foregroundStyle(.secondary)
                 }.padding(14).background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 10))
             }
 
@@ -178,7 +178,7 @@ struct DashboardView: View {
                 if !extensions.isEmpty { itemGroup("Browser Extensions", items: extensions) }
                 HStack(alignment: .top, spacing: 7) {
                     Image(systemName: "clock.arrow.circlepath")
-                    Text(model.remindersEnabled ? "You'll be reminded every 15 minutes until these updates are installed. Apps with their own updater will open so you can finish there." : "Reminders are off. Apps with their own updater will open so you can finish there.")
+                    Text(model.remindersEnabled ? "You'll be reminded every \(model.snoozeDuration.recurrenceLabel) until these updates are installed. Apps with their own updater will open so you can finish there." : "Reminders are off. Apps with their own updater will open so you can finish there.")
                         .fixedSize(horizontal: false, vertical: true)
                 }.font(.system(size: 11)).foregroundStyle(.secondary).padding(.horizontal, 2)
             } else if model.isLoadingResults || (model.search.isEmpty && model.updates.isEmpty) {

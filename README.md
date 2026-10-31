@@ -4,7 +4,7 @@
 
 AI agents are finding vulnerabilities at lightning speed. Keeping software updated matters more than ever.
 
-**Annoying Updater bugs you every 15 minutes until the updates it finds on your Mac are installed.** A native macOS app with one job: making “I'll update it later” a little harder to forget.
+**Annoying Updater bugs you every 15 minutes by default until the updates it finds on your Mac are installed.** A native macOS app with one job: making “I'll update it later” a little harder to forget.
 
 [**Download for macOS →**](https://github.com/elliottjonestw/annoyingupdater/releases/latest)
 
@@ -14,7 +14,7 @@ macOS 14 or later · Apple silicon and Intel
 
 ## Update. Snooze. Repeat.
 
-When an update is available, Annoying Updater brings a reminder to the front. Update now, or snooze for 15 minutes. If updates remain, it'll be back.
+When an update is available, Annoying Updater brings a reminder to the front. Update now, or snooze for your chosen duration (15 minutes by default). If updates remain, it'll be back.
 
 <p align="center">
   <img src="docs/images/reminder.jpg" width="400" alt="The live update reminder with Update and Snooze buttons">
@@ -31,6 +31,7 @@ When an update is available, Annoying Updater brings a reminder to the front. Up
 - **Highlights known vulnerabilities.** Matches supported desktop apps to NVD product and affected-version records, and verified public npm packages to OSV advisories. See CVE details, reported fixes and CISA known-exploitation flags. Uncertain identities and unsupported conditions are labelled clearly; an empty result isn’t a claim of safety.
 - **Remembers what changed.** Local update history records installed version and build changes, including updates made outside Annoying Updater. Pending updates show when they were first detected.
 - **Helps you finish the job.** Installs supported Homebrew updates or takes you to the app, App Store, system updater, or developer's site.
+- **Choose your snooze duration.** Select 5, 15 or 30 minutes, 1, 2, 4 or 8 hours, or 1 day. The reminder, menu bar and window-close action use that setting. Changing it leaves an active snooze deadline intact.
 - **Choose whether to be reminded.** Turn update reminders on or off in Settings. Turning them off closes an open reminder while update checks continue.
 - **Starts with your Mac.** Open at login is on by default. Close the window and it keeps watch from the menu bar.
 - **Keeps itself updated.** Downloads and verifies its own updates from GitHub, then installs them when you quit or choose Install and Relaunch.

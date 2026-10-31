@@ -123,7 +123,7 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         menu.addItem(.separator())
         add("Open Annoying Updater", #selector(showDashboard), to: menu)
         let check = add("Check for Updates", #selector(checkNow), to: menu); check.isEnabled = !model.isChecking && model.installingID == nil
-        let snooze = add("Snooze for 15 Minutes", #selector(snooze), to: menu); snooze.isEnabled = model.remindersEnabled && !model.updates.isEmpty
+        let snooze = add("Snooze for \(model.snoozeDuration.label)", #selector(snooze), to: menu); snooze.isEnabled = model.remindersEnabled && !model.updates.isEmpty
         menu.addItem(.separator())
         add("Settings…", #selector(showSettings), key: ",", to: menu)
         add("Quit Annoying Updater", #selector(quit), key: "q", to: menu)

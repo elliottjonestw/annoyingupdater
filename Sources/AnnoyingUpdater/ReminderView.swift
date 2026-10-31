@@ -41,7 +41,7 @@ struct ReminderView: View {
             VStack(spacing: 10) {
                 Button(action: openDashboard) { Text("Update…").frame(maxWidth: .infinity) }
                     .buttonStyle(.borderedProminent).controlSize(.large).keyboardShortcut(.defaultAction)
-                Button { model.snooze() } label: { Text("Snooze for 15 Minutes").frame(maxWidth: .infinity) }
+                Button { model.snooze() } label: { Text("Snooze for \(model.snoozeDuration.label)").frame(maxWidth: .infinity) }
                     .buttonStyle(.bordered).controlSize(.large).keyboardShortcut(.cancelAction)
                 Text("We'll remind you again if updates are still available.")
                     .font(.system(size: 10)).foregroundStyle(.secondary).padding(.top, 5)
