@@ -33,6 +33,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var hasCompletedScan = false
     @Published var installingID: String?
     @Published private(set) var snoozeDuration: SnoozeDuration
+    @Published private(set) var scanInterval: ScanInterval
     @Published private(set) var remindersEnabled: Bool
     @Published var policy = ReminderPolicy()
     @Published var message: String?
@@ -58,7 +59,6 @@ final class AppModel: ObservableObject {
     private var lastObservation: HistoryObservation?
     private var observers: [NSObjectProtocol] = []
     private var sessionAvailable = true
-    private var lastReminderValidation: Date?
     private var discoveryRefresh: Task<Void, Never>?
     private var discoveryRefreshPending = false
     private var finderCheckPending = false
@@ -86,6 +86,7 @@ final class AppModel: ObservableObject {
         monitoringPreferences = MonitoringPreferences(defaults: defaults)
         remindersEnabled = monitoringPreferences.remindersEnabled
         snoozeDuration = monitoringPreferences.snoozeDuration
+        scanInterval = monitoringPreferences.scanInterval
         loginItems = LoginItemController(service: SystemLoginItemService(), defaults: defaults)
         browserMonitoring = defaults.bool(forKey: "browserMonitoring")
         vulnerabilityChecksEnabled = defaults.object(forKey: "vulnerabilityChecksEnabled") as? Bool ?? true
@@ -159,14 +160,11 @@ final class AppModel: ObservableObject {
         guard !isDemo || demoRemindersEnabled else { return }
         guard sessionAvailable, installingID == nil, !isChecking, !isClearingHistory else { return }
         if finderCheckPending { Task { await check() }; return }
-        if !isDemo && (lastCheck == nil || now.timeIntervalSince(lastCheck!) >= 3600) {
+        if !isDemo && scanInterval.isDue(lastCheck: lastCheck, at: now) {
             Task { await check() }; return
         }
         guard policy.shouldPresent(at: now, confirmedUpdates: updates.count, isInstalling: false, windowVisible: reminderVisible?() ?? false, remindersEnabled: remindersEnabled) else { return }
-        // Revalidate before resurfacing, rather than repeating a stale cached finding.
-        if !isDemo && (lastReminderValidation == nil || now.timeIntervalSince(lastReminderValidation!) >= snoozeDuration.seconds) {
-            Task { await check() }; return
-        }
+        // Reminders use the latest completed check, without shortening the user's scan schedule.
         presentReminder?()
     }
 
@@ -176,7 +174,7 @@ final class AppModel: ObservableObject {
         isChecking = true; finderCheckPending = false; statusDidChange?()
         if isDemo {
             try? await Task.sleep(for: .milliseconds(700))
-            lastCheck = Date(); lastReminderValidation = Date()
+            lastCheck = Date()
             hasCompletedScan = true; isChecking = false; statusDidChange?(); return
         }
         let knownPaths = items.filter { $0.kind == .application }.compactMap { $0.installationPath ?? $0.path } + (defaults.stringArray(forKey: "finderAppPaths") ?? [])
@@ -192,7 +190,7 @@ final class AppModel: ObservableObject {
         }
         let merged = result.preservingLastFindings(from: items)
         items = merged.items.filter { browserMonitoring || $0.kind != .browserExtension }; reports = result.reports; lastCheck = result.date
-        lastReminderValidation = Date(); now = Date(); hasCompletedScan = true; isChecking = false
+        now = Date(); hasCompletedScan = true; isChecking = false
         saveCache(); statusDidChange?(); startVulnerabilityChecks()
         if updates.isEmpty { hideReminder?() }
         tick()
@@ -340,6 +338,11 @@ final class AppModel: ObservableObject {
     func setSnoozeDuration(_ duration: SnoozeDuration) {
         snoozeDuration = duration; monitoringPreferences.setSnoozeDuration(duration)
         statusDidChange?()
+    }
+
+    func setScanInterval(_ interval: ScanInterval) {
+        scanInterval = interval; monitoringPreferences.setScanInterval(interval)
+        tick()
     }
 
     func snooze() {

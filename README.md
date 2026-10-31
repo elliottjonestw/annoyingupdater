@@ -33,6 +33,7 @@ When an update is available, Annoying Updater brings a reminder to the front. Up
 - **Helps you finish the job.** Installs supported Homebrew updates or takes you to the app, App Store, system updater, or developer's site.
 - **Choose your snooze duration.** Select 5, 15 or 30 minutes, 1, 2, 4 or 8 hours, or 1 day. The reminder, menu bar and window-close action use that setting. Changing it leaves an active snooze deadline intact.
 - **Choose whether to be reminded.** Turn update reminders on or off in Settings. Turning them off closes an open reminder while update checks continue.
+- **Choose how often to check.** Scan every 15 or 30 minutes, 1, 2, 4 or 8 hours, or daily. The default is hourly, with extra checks at launch, after waking and when monitored software changes. Reminders use the latest completed scan; publisher catalogs and vulnerability data may refresh less often.
 - **Starts with your Mac.** Open at login is on by default. Close the window and it keeps watch from the menu bar.
 - **Keeps itself updated.** Downloads and verifies its own updates from GitHub, then installs them when you quit or choose Install and Relaunch.
 

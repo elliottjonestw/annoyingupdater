@@ -68,3 +68,48 @@ struct ConfigurableSnoozeTests {
         #expect(policy.snoozedUntil != nil && policy.snoozedDuration == nil)
     }
 }
+
+@Suite("Configurable scan schedule")
+struct ConfigurableScanScheduleTests {
+    @Test func hourlyDefaultAndSavedIntervalsSurviveRelaunch() throws {
+        let suite = "test.scan-interval.\(UUID().uuidString)", defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let settings = MonitoringPreferences(defaults: defaults)
+        #expect(settings.scanInterval == .oneHour)
+        for invalid in [0, -60, 1, 123456] {
+            defaults.set(invalid, forKey: "scanIntervalMinutes")
+            #expect(settings.scanInterval == .oneHour)
+        }
+        for interval in ScanInterval.allCases {
+            settings.setScanInterval(interval)
+            #expect(MonitoringPreferences(defaults: defaults).scanInterval == interval)
+        }
+    }
+    @Test func firstCheckAndEachDueBoundaryUseElapsedTime() {
+        let completed = Date(timeIntervalSince1970: 1_000_000)
+        for interval in ScanInterval.allCases {
+            #expect(interval.isDue(lastCheck: nil, at: completed))
+            #expect(!interval.isDue(lastCheck: completed, at: completed))
+            #expect(!interval.isDue(lastCheck: completed, at: completed.addingTimeInterval(interval.seconds - 1)))
+            #expect(interval.isDue(lastCheck: completed, at: completed.addingTimeInterval(interval.seconds)))
+            #expect(interval.isDue(lastCheck: completed, at: completed.addingTimeInterval(interval.seconds + 3600)))
+            // A clock adjustment must not turn a future last-check date into a long delay.
+            #expect(interval.isDue(lastCheck: completed, at: completed.addingTimeInterval(-60)))
+        }
+    }
+    @Test func changingScheduleReevaluatesTheLastCompletedCheckIndependentlyOfReminders() throws {
+        let suite = "test.scan-reschedule.\(UUID().uuidString)", defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let settings = MonitoringPreferences(defaults: defaults)
+        let completed = Date(timeIntervalSince1970: 1_000_000), now = completed.addingTimeInterval(1800)
+        #expect(!settings.scanInterval.isDue(lastCheck: completed, at: now))
+        settings.setScanInterval(.fifteenMinutes)
+        #expect(settings.scanInterval.isDue(lastCheck: completed, at: now))
+        settings.setRemindersEnabled(false); settings.setSnoozeDuration(.oneDay)
+        #expect(settings.scanInterval == .fifteenMinutes)
+        #expect(settings.scanInterval.isDue(lastCheck: completed, at: now))
+        settings.setScanInterval(.oneDay)
+        #expect(!settings.scanInterval.isDue(lastCheck: completed, at: now))
+        #expect(!settings.remindersEnabled && settings.snoozeDuration == .oneDay)
+    }
+}
