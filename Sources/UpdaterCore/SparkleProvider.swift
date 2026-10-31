@@ -96,7 +96,7 @@ public enum SparkleProvider {
 public enum Network {
     public static func data(from url: URL) async throws -> Data {
         var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 25)
-        request.setValue("AnnoyingUpdater/1.0", forHTTPHeaderField: "User-Agent")
+        request.setValue("upd8er/1.0", forHTTPHeaderField: "User-Agent")
         let (bytes, response) = try await URLSession.shared.bytes(for: request)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode), http.url?.scheme == "https" else {
             throw CheckError.failed("The update service is unavailable. Try again later.")

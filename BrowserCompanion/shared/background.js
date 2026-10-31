@@ -3,7 +3,7 @@ const api = typeof browser !== 'undefined' ? browser : chrome;
 let pending = null;
 function refresh() {
   if (pending) return pending;
-  pending = AnnoyingBrowserBridge.sync(api, {
+  pending = upd8erBrowserBridge.sync(api, {
     userAgent: navigator.userAgent, userAgentData: navigator.userAgentData, brave: !!navigator.brave, uuid: () => crypto.randomUUID()
   }).then(() => api.action.setBadgeText({ text: '' })).catch(() => api.action.setBadgeText({ text: '!' })).finally(() => { pending = null; });
   return pending;

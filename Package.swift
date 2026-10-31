@@ -2,10 +2,10 @@
 import PackageDescription
 
 let package = Package(
-    name: "AnnoyingUpdater",
+    name: "upd8er",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "AnnoyingUpdater", targets: ["AnnoyingUpdater"]),
+        .executable(name: "upd8er", targets: ["upd8er"]),
         .executable(name: "UpdaterProbe", targets: ["UpdaterProbe"]),
         .executable(name: "BrowserBridge", targets: ["BrowserBridge"])
     ],
@@ -16,7 +16,7 @@ let package = Package(
     targets: [
         .systemLibrary(name: "CSQLite"),
         .target(name: "UpdaterCore", dependencies: ["CSQLite", .product(name: "Yams", package: "Yams")]),
-        .executableTarget(name: "AnnoyingUpdater", dependencies: ["UpdaterCore", .product(name: "Sparkle", package: "Sparkle")],
+        .executableTarget(name: "upd8er", dependencies: ["UpdaterCore", .product(name: "Sparkle", package: "Sparkle")],
                           linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]),
         .executableTarget(name: "UpdaterProbe", dependencies: ["UpdaterCore"]),
         .executableTarget(name: "BrowserBridge", dependencies: ["UpdaterCore"]),

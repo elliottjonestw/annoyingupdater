@@ -59,7 +59,7 @@ public struct BrowserInventoryStore: Sendable {
     // Public manifest key gives unpacked Chromium builds a stable origin.
     public static let chromiumID = "cnciihpabdhnhlijmcbfkapfmfgaocjp"
     public let directory: URL
-    public init(directory: URL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Annoying Updater/Browser Profiles")) { self.directory = directory }
+    public init(directory: URL = AppIdentity.supportDirectory.appendingPathComponent("Browser Profiles")) { self.directory = directory }
     public func save(_ payload: Data, at date: Date = Date()) throws {
         guard payload.count <= 512 * 1024 else { throw CheckError.invalidResponse }
         var profile = try JSONDecoder().decode(BrowserProfile.self, from: payload).validated()
@@ -91,10 +91,26 @@ public struct BrowserInventoryStore: Sendable {
     }
     public static func hostManifest(browser: BrowserFamily, executable: String) throws -> Data {
         guard executable.hasPrefix("/") else { throw CheckError.invalidResponse }
-        var result: [String: Any] = ["name": hostName, "description": "Annoying Updater extension inventory", "path": executable, "type": "stdio"]
+        var result: [String: Any] = ["name": hostName, "description": "upd8er extension inventory", "path": executable, "type": "stdio"]
         if browser == .firefox { result["allowed_extensions"] = [firefoxID] }
         else { result["allowed_origins"] = ["chrome-extension://\(chromiumID)/"] }
         return try JSONSerialization.data(withJSONObject: result, options: [.prettyPrinted, .sortedKeys])
+    }
+    /// Relocate an existing connection without adding hosts or broadening browser permissions.
+    public static func relocatedHostManifest(_ data: Data, executable: String) throws -> Data? {
+        guard executable.hasPrefix("/"),
+              var manifest = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              manifest["name"] as? String == hostName, manifest["type"] as? String == "stdio",
+              let oldPath = manifest["path"] as? String, oldPath.hasPrefix("/") else { return nil }
+        let old = URL(fileURLWithPath: oldPath)
+        let app = old.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        guard old.lastPathComponent == "BrowserBridge",
+              old.deletingLastPathComponent().lastPathComponent == "MacOS",
+              old.deletingLastPathComponent().deletingLastPathComponent().lastPathComponent == "Contents",
+              ["Annoying Updater.app", "upd8er.app"].contains(app.lastPathComponent) else { return nil }
+        guard oldPath != executable || manifest["description"] as? String != "upd8er extension inventory" else { return nil }
+        manifest["path"] = executable; manifest["description"] = "upd8er extension inventory"
+        return try JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys])
     }
 }
 public enum NativeMessage {

@@ -120,7 +120,7 @@ struct UpdateHistoryTests {
     @Test func osAndSelfUpdatesUseStableInstalledIdentities() {
         var state = HistoryTrackingState()
         let os = SoftwareSnapshot(id: "system:macos", name: "macOS", version: "26.0", build: "25A1", kind: .macOS)
-        let own = SoftwareSnapshot(id: "self:com.annoyingupdater.app", name: "Annoying Updater", version: "1.0", kind: .updater)
+        let own = SoftwareSnapshot(id: "self:com.annoyingupdater.app", name: "upd8er", version: "1.0", kind: .updater)
         let systemOffer = UpdateItem(id: "system:macOS 26.1:26.1", name: "macOS 26.1", installedVersion: "26.0", availableVersion: "26.1", source: .system, status: .available)
         _ = state.apply(observation([os, own], 10), items: [systemOffer], checkedAt: at(11))
         var nextOS = os; nextOS.version = "26.1"; nextOS.build = "25B1"

@@ -16,7 +16,7 @@ guard items.count == 1, let item = items.first as? XMLElement,
       item.elements(forName: "sparkle:shortVersionString").first?.stringValue == args[4],
       let encodedSignature = enclosure.attribute(forName: "sparkle:edSignature")?.stringValue,
       let signature = Data(base64Encoded: encodedSignature) else { fail("Invalid version or missing signature.") }
-let expectedURL = "https://github.com/elliottjonestw/annoyingupdater/releases/download/v\(args[4])/AnnoyingUpdater-\(args[4])-universal.dmg"
+let expectedURL = "https://github.com/elliottjonestw/annoyingupdater/releases/download/v\(args[4])/upd8er-\(args[4])-universal.dmg"
 guard enclosure.attribute(forName: "url")?.stringValue == expectedURL else { fail("Unexpected download URL.") }
 let plistData = try Data(contentsOf: URL(fileURLWithPath: args[3]))
 let plist = try PropertyListSerialization.propertyList(from: plistData, format: nil) as? [String: Any]

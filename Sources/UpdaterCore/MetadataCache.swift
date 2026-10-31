@@ -35,8 +35,7 @@ public actor MetadataCache {
     private var pending: [URL: Pending] = [:]
     private var failures: [URL: (Date, String)] = [:]
 
-    public init(directory: URL = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-                    .appendingPathComponent("Annoying Updater/Metadata"), loader: @escaping Loader = { try await MetadataCache.download($0, maxBytes: $1) }) {
+    public init(directory: URL = AppIdentity.cacheDirectory.appendingPathComponent("Metadata"), loader: @escaping Loader = { try await MetadataCache.download($0, maxBytes: $1) }) {
         self.directory = directory; self.loader = loader
     }
 
@@ -92,7 +91,7 @@ public actor MetadataCache {
         guard PublicURL.isAllowed(url) else { throw CheckError.invalidResponse }
         if url.host == "api.github.com" { try await GitHubRequestBudget.shared.reserve() }
         var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 35)
-        request.setValue("AnnoyingUpdater/1.0", forHTTPHeaderField: "User-Agent")
+        request.setValue("upd8er/1.0", forHTTPHeaderField: "User-Agent")
         request.setValue("application/json, application/yaml, text/yaml, */*", forHTTPHeaderField: "Accept")
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForResource = 90

@@ -6,7 +6,7 @@ struct HistoryView: View {
     @ObservedObject var model: AppModel
     private var filtered: [UpdateHistoryEntry] {
         model.historyEntries.filter {
-            model.historySearch.isEmpty || $0.software.name.localizedCaseInsensitiveContains(model.historySearch)
+            model.historySearch.isEmpty || $0.software.displayName.localizedCaseInsensitiveContains(model.historySearch)
                 || $0.software.version.localizedCaseInsensitiveContains(model.historySearch)
                 || $0.previousVersion.localizedCaseInsensitiveContains(model.historySearch)
         }
@@ -40,7 +40,7 @@ struct HistoryView: View {
                 } description: {
                     Text(model.historyError != nil ? "Recorded changes will appear when history can be loaded." : model.historyStartedAt == nil
                          ? "The first fresh scan establishes your installed versions. Future changes will appear here automatically."
-                         : "Installed version changes will appear here as they're detected, including updates made outside Annoying Updater.")
+                         : "Installed version changes will appear here as they're detected, including updates made outside upd8er.")
                 }
                 .frame(maxWidth: .infinity, minHeight: 260)
                 .padding(.vertical, 24)
@@ -94,7 +94,7 @@ private struct HistoryRow: View {
     @ObservedObject var model: AppModel
     private var expanded: Bool { model.expandedHistoryIDs.contains(entry.id) }
     private var iconItem: UpdateItem {
-        UpdateItem(id: entry.software.id, name: entry.software.name,
+        UpdateItem(id: entry.software.id, name: entry.software.displayName,
             path: entry.software.kind == .updater ? Bundle.main.bundlePath : entry.software.path,
             installedVersion: entry.software.version, source: entry.software.kind == .macOS ? .system : .unknown, status: .current, softwareKind: entry.software.kind)
     }
@@ -107,7 +107,7 @@ private struct HistoryRow: View {
             HStack(spacing: 14) {
                 AppIconView(item: iconItem)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(entry.software.name).font(.system(size: 13, weight: .semibold)).lineLimit(1)
+                    Text(entry.software.displayName).font(.system(size: 13, weight: .semibold)).lineLimit(1)
                     Text(versionText).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer(minLength: 8)
@@ -122,8 +122,8 @@ private struct HistoryRow: View {
                         if expanded { model.expandedHistoryIDs.remove(entry.id) } else { model.expandedHistoryIDs.insert(entry.id) }
                     }
                 } label: { Image(systemName: "info.circle").foregroundStyle(.secondary) }
-                .buttonStyle(.plain).help("Show history details for \(entry.software.name)")
-                .accessibilityLabel("History details for \(entry.software.name)")
+                .buttonStyle(.plain).help("Show history details for \(entry.software.displayName)")
+                .accessibilityLabel("History details for \(entry.software.displayName)")
                 .accessibilityValue(expanded ? "Expanded" : "Collapsed")
             }.padding(.horizontal, 16).padding(.vertical, 15)
             if expanded {

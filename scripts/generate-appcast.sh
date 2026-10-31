@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "${0:A:h:h}"
 version="$(<VERSION)"
-image_path="$PWD/dist/AnnoyingUpdater-$version-universal.dmg"
+image_path="$PWD/dist/upd8er-$version-universal.dmg"
 [[ -f "$image_path" ]] || { print -u2 'Run scripts/package.sh first.'; exit 1; }
 # One archive per generated feed. Old DMGs in dist must never leak into a new release.
 feed_dir="$(mktemp -d "$PWD/build/appcast.XXXXXX")"

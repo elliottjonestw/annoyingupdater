@@ -31,7 +31,7 @@ struct DashboardView: View {
                     Divider()
                     Button(action: openSettings) { Label("Settings…", systemImage: "gearshape").frame(maxWidth: .infinity, alignment: .leading) }
                         .buttonStyle(.plain).foregroundStyle(.secondary)
-                    Text("Annoying Updater \(AppVersion.display)").font(.system(size: 10)).foregroundStyle(.tertiary)
+                    Text("upd8er \(AppVersion.display)").font(.system(size: 10)).foregroundStyle(.tertiary)
                 }.padding(16)
             }
             .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 240)

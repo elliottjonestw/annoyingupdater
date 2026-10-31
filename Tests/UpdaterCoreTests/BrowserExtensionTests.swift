@@ -131,7 +131,7 @@ struct BrowserExtensionTests {
         try handle.write(contentsOf: Data([2,0,0,0,123])); try handle.seek(toOffset: 0)
         #expect(throws: (any Error).self) { try NativeMessage.read(from: handle) }
         #expect(BrowserFamily.brave.supportPath == "Google/Chrome")
-        let manifest = try JSONSerialization.jsonObject(with: BrowserInventoryStore.hostManifest(browser: .brave, executable: "/Applications/Annoying Updater.app/Contents/MacOS/BrowserBridge")) as! [String: Any]
+        let manifest = try JSONSerialization.jsonObject(with: BrowserInventoryStore.hostManifest(browser: .brave, executable: "/Applications/upd8er.app/Contents/MacOS/BrowserBridge")) as! [String: Any]
         #expect(manifest["allowed_origins"] as? [String] == ["chrome-extension://\(BrowserInventoryStore.chromiumID)/"])
         #expect(manifest["allowed_extensions"] == nil)
     }

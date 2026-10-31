@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Annoying Updater Companion",
+  "name": "upd8er Companion",
   "version": "1.0",
-  "description": "Share installed extension metadata with Annoying Updater on this Mac.",
+  "description": "Share installed extension metadata with upd8er on this Mac.",
   "permissions": [
     "management",
     "nativeMessaging",
@@ -11,7 +11,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Annoying Updater"
+    "default_title": "upd8er"
   },
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApXe1D5NE6VrVuQHR8/a3JLZ3GLVOfrfTW3jddPsiva+rA1RYjdODgidE86JaYbqM+XjT4T6LuIqvJ9Tc1viR2ryUpbNFkawAtF0ctqPpGNBmzJG9s6NKvspFhqR7nuXVtooY97qQY1ta4cTe0dlfxItea9Cxfitjy18Hc/SGmYO4hiVrpxtJSt0hVVBS9SZiAZpUcmIIq401f32bxc6TqD3y3SNDndGqBQ6qB+zqs6yfh1fPKVYUH8/Y0dsmFizv/AX+4W3oOBGD07MTGQlOFNkSOhOe28/N66SPed3C689b/FKDGfw5iJyjn1w/2A6U57aR4u6tLE+nGWX6Hc1UtwIDAQAB",
   "background": {

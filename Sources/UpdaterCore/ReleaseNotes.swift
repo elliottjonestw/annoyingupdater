@@ -51,7 +51,7 @@ extension ReleaseNotesRequest {
         guard entry.change == .updated || entry.change == .buildChanged, var context = entry.software.releaseNotes, !context.sources.isEmpty else { return nil }
         context.installedBuild = entry.previousBuild.isEmpty ? nil : entry.previousBuild
         context.targetBuild = entry.software.build.isEmpty ? nil : entry.software.build
-        self.init(item: UpdateItem(id: entry.software.id, name: entry.software.name, bundleID: entry.software.bundleID,
+        self.init(item: UpdateItem(id: entry.software.id, name: entry.software.displayName, bundleID: entry.software.bundleID,
             installedVersion: entry.previousVersion, availableVersion: entry.software.version, source: .unknown, status: .current, releaseNotes: context))
     }
 }

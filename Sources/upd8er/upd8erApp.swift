@@ -3,7 +3,7 @@ import SwiftUI
 import UpdaterCore
 
 @main
-enum AnnoyingUpdaterApp {
+enum upd8erApp {
     @MainActor
     static func main() {
         if InventoryWorker.handleCommandLine() { return }
@@ -40,7 +40,7 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         selfUpdater.start()
         installMenus()
         let status = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        status.button?.image = NSImage(systemSymbolName: "arrow.triangle.2.circlepath", accessibilityDescription: "Annoying Updater")
+        status.button?.image = NSImage(systemSymbolName: "arrow.triangle.2.circlepath", accessibilityDescription: "upd8er")
         status.button?.imagePosition = .imageLeading
         let menu = NSMenu(); menu.delegate = self; status.menu = menu; statusItem = status
         model.presentReminder = { [weak self] in self?.showReminder() }
@@ -70,7 +70,7 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             let view = DashboardView(model: model, openSettings: { [weak self] in self?.showSettings() })
             let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 960, height: 710),
                                   styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-            window.title = "Annoying Updater"
+            window.title = "upd8er"
             window.titlebarAppearsTransparent = true; window.toolbarStyle = .unified
             window.contentViewController = NSHostingController(rootView: view)
             window.minSize = NSSize(width: 800, height: 560)
@@ -121,16 +121,16 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         let heading = NSMenuItem(title: summary, action: nil, keyEquivalent: ""); heading.isEnabled = false; menu.addItem(heading)
         if !model.remindersEnabled || model.isSnoozed { let item = NSMenuItem(title: model.snoozeDescription, action: nil, keyEquivalent: ""); item.isEnabled = false; menu.addItem(item) }
         menu.addItem(.separator())
-        add("Open Annoying Updater", #selector(showDashboard), to: menu)
+        add("Open upd8er", #selector(showDashboard), to: menu)
         let check = add("Check for Updates", #selector(checkNow), to: menu); check.isEnabled = !model.isChecking && model.installingID == nil
         let snooze = add("Snooze for \(model.snoozeDuration.label)", #selector(snooze), to: menu); snooze.isEnabled = model.remindersEnabled && !model.updates.isEmpty
         menu.addItem(.separator())
         add("Settings…", #selector(showSettings), key: ",", to: menu)
-        add("Quit Annoying Updater", #selector(quit), key: "q", to: menu)
+        add("Quit upd8er", #selector(quit), key: "q", to: menu)
     }
     private func refreshStatus() {
         statusItem?.button?.title = model.updates.isEmpty ? "" : " \(model.updates.count)"
-        statusItem?.button?.toolTip = "Annoying Updater — \(model.updates.count) updates available"
+        statusItem?.button?.toolTip = "upd8er — \(model.updates.count) updates available"
     }
     @objc private func checkForSelfUpdates() { selfUpdater.checkForUpdates() }
     @objc private func checkNow() { Task { await model.check() } }
@@ -138,7 +138,7 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     @objc private func quit() {
         if model.installingID != nil {
             let alert = NSAlert(); alert.messageText = "An update is still installing"
-            alert.informativeText = "Wait for installation to finish before quitting Annoying Updater."
+            alert.informativeText = "Wait for installation to finish before quitting upd8er."
             alert.addButton(withTitle: "OK"); alert.runModal(); return
         }
         NSApp.terminate(nil)
@@ -150,13 +150,13 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private func installMenus() {
         let bar = NSMenu()
         let appItem = NSMenuItem(); let app = NSMenu(); appItem.submenu = app; bar.addItem(appItem)
-        let about = NSMenuItem(title: "About Annoying Updater", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: ""); app.addItem(about)
-        add("Check for Annoying Updater Updates…", #selector(checkForSelfUpdates), to: app)
+        let about = NSMenuItem(title: "About upd8er", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: ""); app.addItem(about)
+        add("Check for upd8er Updates…", #selector(checkForSelfUpdates), to: app)
         app.addItem(.separator()); add("Settings…", #selector(showSettings), key: ",", to: app)
         app.addItem(.separator())
-        app.addItem(withTitle: "Hide Annoying Updater", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        app.addItem(withTitle: "Hide upd8er", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         app.addItem(withTitle: "Show All", action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: "")
-        app.addItem(.separator()); add("Quit Annoying Updater", #selector(quit), key: "q", to: app)
+        app.addItem(.separator()); add("Quit upd8er", #selector(quit), key: "q", to: app)
         let editItem = NSMenuItem(); let edit = NSMenu(title: "Edit"); editItem.submenu = edit; bar.addItem(editItem)
         edit.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
         edit.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")

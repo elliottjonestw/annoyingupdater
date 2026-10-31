@@ -10,8 +10,8 @@ document.getElementById('sync').addEventListener('click', async () => {
   const status = document.getElementById('status'); status.textContent = 'Connecting…';
   try {
     await api.storage.local.set({ label: document.getElementById('label').value.trim() || 'Default profile', browser: document.getElementById('browser').value });
-    const count = await AnnoyingBrowserBridge.sync(api, { userAgent: navigator.userAgent, userAgentData: navigator.userAgentData, brave: !!navigator.brave, uuid: () => crypto.randomUUID() });
-    status.textContent = `Connected. ${count} extensions shared with Annoying Updater.`;
-  } catch (error) { status.textContent = `Couldn't connect. Prepare the bridge in Annoying Updater Settings first. ${error.message}`; }
+    const count = await upd8erBrowserBridge.sync(api, { userAgent: navigator.userAgent, userAgentData: navigator.userAgentData, brave: !!navigator.brave, uuid: () => crypto.randomUUID() });
+    status.textContent = `Connected. ${count} extensions shared with upd8er.`;
+  } catch (error) { status.textContent = `Couldn't connect. Prepare the bridge in upd8er Settings first. ${error.message}`; }
 });
 load();

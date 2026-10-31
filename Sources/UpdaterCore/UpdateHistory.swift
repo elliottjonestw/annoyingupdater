@@ -16,6 +16,8 @@ public struct SoftwareSnapshot: Codable, Equatable, Sendable, Identifiable {
     public var build: String
     public var kind: SoftwareKind
     public var releaseNotes: ReleaseNotesContext?
+    /// Historical records keep their original payload, but the app's own rows use its current name.
+    public var displayName: String { kind == .updater && id == "self:\(AppIdentity.bundleIdentifier)" ? AppIdentity.name : name }
 
     public init(id: String, name: String, bundleID: String = "", path: String? = nil,
                 version: String, build: String = "", kind: SoftwareKind = .application, resolvedPath: String? = nil, releaseNotes: ReleaseNotesContext? = nil) {
@@ -29,7 +31,7 @@ public struct SoftwareSnapshot: Codable, Equatable, Sendable, Identifiable {
     public static func ownApp(at url: URL) -> SoftwareSnapshot? {
         guard let data = try? Data(contentsOf: url.appendingPathComponent("Contents/Info.plist")),
               let info = (try? PropertyListSerialization.propertyList(from: data, format: nil)) as? [String: Any],
-              info["CFBundleIdentifier"] as? String == "com.annoyingupdater.app",
+              info["CFBundleIdentifier"] as? String == AppIdentity.bundleIdentifier,
               let version = info["CFBundleShortVersionString"] as? String else { return nil }
         var sources: [ReleaseNotesSource] = []
         if let feed = (info["SUFeedURL"] as? String).flatMap(URL.init(string:)), PublicURL.isAllowed(feed) {
@@ -38,7 +40,7 @@ public struct SoftwareSnapshot: Codable, Equatable, Sendable, Identifiable {
                let source = ReleaseNotesSource.publisher(publisher) { sources.append(source) }
             sources.append(ReleaseNotesSource(.sparkle, url: feed))
         }
-        return SoftwareSnapshot(id: "self:com.annoyingupdater.app", name: "Annoying Updater", bundleID: "com.annoyingupdater.app",
+        return SoftwareSnapshot(id: "self:\(AppIdentity.bundleIdentifier)", name: AppIdentity.name, bundleID: AppIdentity.bundleIdentifier,
             path: url.path, version: version, build: info["CFBundleVersion"] as? String ?? "", kind: .updater, releaseNotes: ReleaseNotesContext(sources: sources))
     }
     public static var operatingSystem: SoftwareSnapshot {
@@ -216,7 +218,7 @@ public struct UpdateHistoryDay: Identifiable, Sendable {
         let groups = Dictionary(grouping: entries) { calendar.startOfDay(for: $0.detectedAt) }
         return groups.keys.sorted(by: >).map { UpdateHistoryDay(id: $0, entries: groups[$0]!.sorted {
             if $0.detectedAt != $1.detectedAt { return $0.detectedAt > $1.detectedAt }
-            return $0.software.name.localizedStandardCompare($1.software.name) == .orderedAscending
+            return $0.software.displayName.localizedStandardCompare($1.software.displayName) == .orderedAscending
         }) }
     }
 }

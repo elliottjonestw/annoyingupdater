@@ -20,15 +20,15 @@ build_args=(-c "$configuration"
 if [[ "$architecture" == "universal" ]]; then
     build_args+=(--arch arm64 --arch x86_64)
 fi
-swift build "${build_args[@]}" --product AnnoyingUpdater
+swift build "${build_args[@]}" --product upd8er
 swift build "${build_args[@]}" --product BrowserBridge
 binary_dir="$(swift build "${build_args[@]}" --show-bin-path)"
 mkdir -p build
 staging="$(mktemp -d "$PWD/build/bundle.XXXXXX")"
 trap 'rm -rf "$staging"' EXIT
-app_path="$staging/Annoying Updater.app"
+app_path="$staging/upd8er.app"
 mkdir -p "$app_path/Contents/MacOS" "$app_path/Contents/Resources" "$app_path/Contents/Frameworks"
-cp "$binary_dir/AnnoyingUpdater" "$app_path/Contents/MacOS/AnnoyingUpdater"
+cp "$binary_dir/upd8er" "$app_path/Contents/MacOS/upd8er"
 cp "$binary_dir/BrowserBridge" "$app_path/Contents/MacOS/BrowserBridge"
 codesign --force --sign - "$app_path/Contents/MacOS/BrowserBridge"
 python3 scripts/package-companion.py "$app_path/Contents/Resources/BrowserCompanion"
@@ -45,12 +45,12 @@ ditto "$framework" "$app_path/Contents/Frameworks/Sparkle.framework"
 codesign --force --sign - "$app_path"
 codesign --verify --deep --strict "$app_path"
 if [[ "$architecture" == "universal" ]]; then
-    lipo "$app_path/Contents/MacOS/AnnoyingUpdater" -verify_arch arm64
-    lipo "$app_path/Contents/MacOS/AnnoyingUpdater" -verify_arch x86_64
+    lipo "$app_path/Contents/MacOS/upd8er" -verify_arch arm64
+    lipo "$app_path/Contents/MacOS/upd8er" -verify_arch x86_64
     lipo "$app_path/Contents/MacOS/BrowserBridge" -verify_arch arm64
     lipo "$app_path/Contents/MacOS/BrowserBridge" -verify_arch x86_64
 fi
 # Replace the previous output only after the new bundle passes verification.
-rm -rf "$PWD/build/Annoying Updater.app"
-ditto "$app_path" "$PWD/build/Annoying Updater.app"
-print "Built $version ($configuration, $architecture): $PWD/build/Annoying Updater.app"
+rm -rf "$PWD/build/upd8er.app"
+ditto "$app_path" "$PWD/build/upd8er.app"
+print "Built $version ($configuration, $architecture): $PWD/build/upd8er.app"

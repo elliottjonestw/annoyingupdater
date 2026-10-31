@@ -32,7 +32,7 @@ enum DemoData {
             UpdateHistoryEntry(id: "demo-history:signal", software: SoftwareSnapshot(id: "demo:signal", name: "Signal", path: "/Applications/Signal.app", version: "7.67", build: "701"),
                 previousVersion: "7.66", previousBuild: "699", change: .updated, detectedAt: now.addingTimeInterval(-3600),
                 previouslyObservedAt: now.addingTimeInterval(-7200), firstDetectedAvailableAt: now.addingTimeInterval(-3 * 86400)),
-            UpdateHistoryEntry(id: "demo-history:updater", software: SoftwareSnapshot(id: "self:com.annoyingupdater.app", name: "Annoying Updater", version: "1.0", kind: .updater),
+            UpdateHistoryEntry(id: "demo-history:updater", software: SoftwareSnapshot(id: "self:com.annoyingupdater.app", name: "upd8er", version: "1.0", kind: .updater),
                 previousVersion: "0.2.1", change: .updated, detectedAt: now.addingTimeInterval(-86400), previouslyObservedAt: now.addingTimeInterval(-90000)),
             UpdateHistoryEntry(id: "demo-history:macos", software: SoftwareSnapshot(id: "system:macos", name: "macOS", version: "26.0", build: "25A354", kind: .macOS),
                 previousVersion: "25.6", previousBuild: "24G84", change: .updated, detectedAt: now.addingTimeInterval(-2 * 86400), previouslyObservedAt: now.addingTimeInterval(-3 * 86400)),

@@ -64,8 +64,7 @@ final class AppModel: ObservableObject {
     private var finderCheckPending = false
     private var browserFingerprint = ""
     private var cacheURL: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Annoying Updater/last-scan.json")
+        AppIdentity.supportDirectory.appendingPathComponent("last-scan.json")
     }
     var updates: [UpdateItem] { items.filter { $0.status == .available && (browserMonitoring || $0.kind != .browserExtension) } }
     var unsupported: [UpdateItem] { items.filter { $0.status == .unsupported } }
@@ -122,6 +121,7 @@ final class AppModel: ObservableObject {
     }
 
     func start() {
+        refreshBrowserConnections()
         browserFingerprint = BrowserInventoryStore().fingerprint()
         configureDefaultLoginItem()
         heartbeat = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
@@ -288,16 +288,34 @@ final class AppModel: ObservableObject {
         let app = Bundle.main.bundleURL
         let userApps = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications").path + "/"
         guard app.path.hasPrefix("/Applications/") || app.path.hasPrefix(userApps) else {
-            throw CheckError.failed("Move Annoying Updater to Applications before preparing the browser bridge.")
+            throw CheckError.failed("Move upd8er to Applications before preparing the browser bridge.")
         }
         let executable = app.appendingPathComponent("Contents/MacOS/BrowserBridge").path
-        guard FileManager.default.isExecutableFile(atPath: executable) else { throw CheckError.failed("The browser bridge is missing. Reinstall Annoying Updater.") }
+        guard FileManager.default.isExecutableFile(atPath: executable) else { throw CheckError.failed("The browser bridge is missing. Reinstall upd8er.") }
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let directory = support.appendingPathComponent(browser.supportPath + "/NativeMessagingHosts")
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try BrowserInventoryStore.hostManifest(browser: browser, executable: executable)
             .write(to: directory.appendingPathComponent(BrowserInventoryStore.hostName + ".json"), options: .atomic)
         setBrowserMonitoring(true)
+    }
+    private func refreshBrowserConnections() {
+        guard !isDemo else { return }
+        let app = Bundle.main.bundleURL
+        let userApps = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications").path + "/"
+        guard app.path.hasPrefix("/Applications/") || app.path.hasPrefix(userApps) else { return }
+        let executable = app.appendingPathComponent("Contents/MacOS/BrowserBridge").path
+        guard FileManager.default.isExecutableFile(atPath: executable) else { return }
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        for path in Set(BrowserFamily.allCases.map(\.supportPath)) {
+            let file = support.appendingPathComponent(path + "/NativeMessagingHosts/" + BrowserInventoryStore.hostName + ".json")
+            guard FileManager.default.fileExists(atPath: file.path) else { continue }
+            do {
+                if let data = try BrowserInventoryStore.relocatedHostManifest(Data(contentsOf: file), executable: executable) {
+                    try data.write(to: file, options: .atomic)
+                }
+            } catch { showError("The browser connection couldn't be refreshed. Prepare it again in Settings → Set Up Browser Companion.") }
+        }
     }
     func openBrowserExtensions(_ browser: BrowserFamily) {
         guard let application = NSWorkspace.shared.urlForApplication(withBundleIdentifier: browser.bundleID) else {
@@ -407,7 +425,7 @@ final class AppModel: ObservableObject {
                NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).contains(where: { !$0.isTerminated }) {
                 let alert = NSAlert()
                 alert.messageText = "Quit \(item.name) to update?"
-                alert.informativeText = "Save your work first. Annoying Updater will ask the app to quit before updating it."
+                alert.informativeText = "Save your work first. upd8er will ask the app to quit before updating it."
                 alert.addButton(withTitle: "Quit and Update"); alert.addButton(withTitle: "Cancel")
                 guard alert.runModal() == .alertFirstButtonReturn else { return }
                 for app in NSRunningApplication.runningApplications(withBundleIdentifier: bundleID) { app.terminate() }

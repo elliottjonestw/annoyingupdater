@@ -31,6 +31,6 @@
     return snapshot.extensions.length;
   }
   const bridge = { collect, sync };
-  root.AnnoyingBrowserBridge = bridge;
+  root.upd8erBrowserBridge = bridge;
   if (typeof module !== 'undefined') module.exports = bridge;
 })(globalThis);

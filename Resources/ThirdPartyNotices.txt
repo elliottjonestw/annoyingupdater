@@ -12,7 +12,7 @@ CISA Known Exploited Vulnerabilities catalog:
 https://www.cisa.gov/known-exploited-vulnerabilities-catalog
 Official data mirror: https://github.com/cisagov/kev-data
 
-Annoying Updater — Third-party notices
+upd8er — Third-party notices
 
 Yams 6.2.2
 https://github.com/jpsim/Yams

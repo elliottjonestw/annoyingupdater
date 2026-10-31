@@ -68,12 +68,12 @@ jobs:
           # Keep the feed invisible until the DMG and signatures are uploaded.
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             gh release create "$RELEASE_TAG" --verify-tag --draft \
-              --title "Annoying Updater $version" --generate-notes
+              --title "upd8er $version" --generate-notes
           fi
           if [ "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" != true ]; then
             echo 'Refusing to overwrite a published release. Bump VERSION and create a new tag.' >&2
             exit 1
           fi
           gh release upload "$RELEASE_TAG" \
-            "dist/AnnoyingUpdater-$version-universal.dmg" dist/appcast.xml dist/SHA256SUMS.txt --clobber
+            "dist/upd8er-$version-universal.dmg" dist/appcast.xml dist/SHA256SUMS.txt --clobber
           gh release edit "$RELEASE_TAG" --draft=false --latest

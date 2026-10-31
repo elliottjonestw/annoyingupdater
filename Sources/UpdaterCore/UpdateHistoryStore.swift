@@ -56,7 +56,7 @@ private final class HistoryDatabase {
                 guard sqlite3_step(statement) == SQLITE_ROW else { throw failure("History couldn't be read") }
                 return sqlite3_column_int(statement, 0)
             }
-            guard version <= 1 else { throw UpdateHistoryError(message: "This history database was created by a newer version of Annoying Updater.") }
+            guard version <= 1 else { throw UpdateHistoryError(message: "This history database was created by a newer version of upd8er.") }
             try transaction {
                 try execute("CREATE TABLE IF NOT EXISTS tracking (id INTEGER PRIMARY KEY CHECK (id = 1), payload BLOB NOT NULL)")
                 try execute("CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, detected_at REAL NOT NULL, payload BLOB NOT NULL)")

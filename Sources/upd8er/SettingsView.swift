@@ -58,13 +58,13 @@ struct SettingsView: View {
             }
             Section {
                 LabeledContent("Version", value: AppVersion.display)
-                Toggle("Install Annoying Updater updates automatically", isOn: Binding(
+                Toggle("Install upd8er updates automatically", isOn: Binding(
                     get: { selfUpdater.automaticallyInstalls }, set: { selfUpdater.setAutomaticallyInstalls($0) }))
-                Button("Check for Annoying Updater Updates…") { selfUpdater.checkForUpdates() }
+                Button("Check for upd8er Updates…") { selfUpdater.checkForUpdates() }
                     .disabled(!selfUpdater.canCheckForUpdates)
                 LabeledContent("Data", value: "Stored on this Mac")
-            } header: { Text("About Annoying Updater") } footer: {
-                Text("Annoying Updater checks GitHub for its own updates. Updates are verified before installation and finish when you quit, or when you choose Install and Relaunch.")
+            } header: { Text("About upd8er") } footer: {
+                Text("upd8er checks GitHub for its own updates. Updates are verified before installation and finish when you quit, or when you choose Install and Relaunch.")
             }
             if let message = model.message, model.messageIsError {
                 Section { Text(message).foregroundStyle(.orange).textSelection(.enabled) }
