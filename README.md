@@ -82,6 +82,6 @@ open "build/upd8er.app"
 
 The app was previously called Annoying Updater. Its bundle identifier, local data directories, browser connection identifiers and GitHub update feed remain unchanged so existing settings, history and update signatures continue to work. Existing browser host connections are refreshed to the current installed app path at launch. If an unpacked browser companion was loaded from the old app's folder, load it again from **Settings → Set Up Browser Companion → Show Companion Folder** after moving to `upd8er.app`.
 
-Run `scripts/test.sh` for Swift tests and `node --test BrowserCompanion/bridge.test.cjs` for companion tests. To create a universal disk image, run `scripts/build.sh release universal`, then `scripts/package.sh`. The [release workflow](.github/workflows/release.yml) builds and publishes the version in `VERSION` when its matching tag (such as `v1.4`) is pushed.
+Run `scripts/test.sh` for Swift tests and `node --test BrowserCompanion/bridge.test.cjs` for companion tests. To create a universal disk image, run `scripts/build.sh release universal`, then `scripts/package.sh`. The [release workflow](.github/workflows/release.yml) builds and publishes the version in `VERSION` when its matching tag (such as `v1.5`) is pushed.
 
 All rights reserved. See [LICENSE](LICENSE). Third-party licenses are included in the app and in [ThirdPartyNotices.txt](Resources/ThirdPartyNotices.txt).
